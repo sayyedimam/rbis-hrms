@@ -1,0 +1,9 @@
+/* Reuse login styles */
+@import '../login/login.component.css';
+
+.field-error {
+  color: #f87171;
+  font-size: 0.75rem;
+  margin-top: 4px;
+  margin-left: 2px;
+}

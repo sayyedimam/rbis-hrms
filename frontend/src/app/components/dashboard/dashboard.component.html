@@ -1,0 +1,120 @@
+<div class="module-view-padding">
+    <div class="admin-top-section" *ngIf="isAdmin">
+        <section class="page-section">
+            <div class="section-header">
+                <div class="header-text">
+                  <h2>System Ingestion</h2>
+                  <p>Drop multi-format logs to keep the system up to date</p>
+                </div>
+            </div>
+            <app-upload></app-upload>
+        </section>
+    </div>
+
+    <div class="no-data-msg" *ngIf="!hasData && !loading">
+        <i class="lucide-database"></i>
+        <h3>No Records Found</h3>
+        <p>Your attendance data hasn't been synced for this period yet.</p>
+    </div>
+
+    <div class="data-view" *ngIf="hasData || loading">
+        <div class="dashboard-header">
+            <h2 class="section-title">Attendance Intelligence</h2>
+            <div class="header-actions">
+                <button class="btn-export" (click)="exportToCSV()" title="Download current view as CSV">
+                    <i class="lucide-download"></i> Export Analytics
+                </button>
+            </div>
+        </div>
+
+        <!-- Filters Bar -->
+        <div class="filter-bar" *ngIf="!loading && hasData">
+            <div class="filter-group">
+                <label><i class="lucide-calendar"></i> Period</label>
+                <select [(ngModel)]="selectedDate" (change)="applyFilters()">
+                    <option value="">All Dates</option>
+                    <option *ngFor="let date of availableDates" [value]="date">{{ date }}</option>
+                </select>
+            </div>
+            <div class="filter-group" *ngIf="isAdmin">
+                <label><i class="lucide-user"></i> Context</label>
+                <select [(ngModel)]="selectedEmp" (change)="applyFilters()">
+                    <option value="">Organization Wide</option>
+                    <option *ngFor="let emp of availableEmps" [value]="emp">{{ emp }}</option>
+                </select>
+            </div>
+            <div class="filter-group personal-context" *ngIf="!isAdmin">
+                <label><i class="lucide-user"></i> Context</label>
+                <div class="static-value">Personal Dashboard</div>
+            </div>
+            <button class="reset-btn" (click)="selectedDate=''; selectedEmp=''; applyFilters()"
+                *ngIf="selectedDate || selectedEmp">
+                Clear Filters
+            </button>
+        </div>
+
+        <!-- Stats Section -->
+        <div class="stats-grid" *ngIf="!loading && hasData">
+            <div class="stat-card">
+                <div class="stat-icon"><i class="lucide-users"></i></div>
+                <div class="stat-info">
+                    <span class="label">Present ({{ stats.label }})</span>
+                    <span class="value">{{ stats.present }}</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon trend"><i class="lucide-clock"></i></div>
+                <div class="stat-info">
+                    <span class="label">Avg Hours ({{ stats.label }})</span>
+                    <span class="value">{{ stats.avgHours | number:'1.1-1' }}h</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon alert"><i class="lucide-user-x"></i></div>
+                <div class="stat-info">
+                    <span class="label">Absent ({{ stats.label }})</span>
+                    <span class="value">{{ stats.absent }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Grid -->
+        <div class="charts-grid" *ngIf="!loading && hasData">
+            <div class="chart-card" [class.large]="showTrendChart" *ngIf="showTrendChart">
+                <div class="chart-header">
+                    <h3>Presence Trend</h3>
+                    <p>Daily employee attendance overview</p>
+                </div>
+                <div class="chart-box">
+                    <canvas baseChart [data]="barData" [options]="barChartOptions" type="bar"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-card" *ngIf="showTrendChart">
+                <div class="chart-header">
+                    <h3>Efficiency Analysis</h3>
+                    <p>Average working hours over time</p>
+                </div>
+                <div class="chart-box">
+                    <canvas baseChart [data]="lineData" [options]="lineChartOptions" type="line"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-card" [class.large]="!showTrendChart">
+                <div class="chart-header">
+                    <h3>Status Distribution</h3>
+                    <p>Presence vs Absence breakdown ({{ stats.label }})</p>
+                </div>
+                <div class="chart-box small">
+                    <canvas baseChart [data]="pieData" [options]="pieChartOptions" type="pie"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading Overlay -->
+        <div class="loading-state" *ngIf="loading">
+            <div class="spinner"></div>
+            <p>Analyzing workforce data...</p>
+        </div>
+    </div>
+</div>
