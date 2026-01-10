@@ -1,13 +1,290 @@
-<div class="placeholder-card">
-  <div class="icon-orb">
-    <i class="lucide-construction"></i>
+<div class="leave-container">
+  <div class="header-section">
+    <div class="title-group">
+      <h2>Leave Management</h2>
+      <p>Manage your time off, view balances, and track approval status.</p>
+    </div>
   </div>
-  <h2>Leave Management Portal</h2>
-  <p>We are currently building the leave tracking system. Soon you will be able to apply for leaves, track balances, and manage approvals here.</p>
-  <div class="feature-tags">
-    <span>Annual Leave</span>
-    <span>Sick Leave</span>
-    <span>Approvals</span>
-    <span>Policy Engine</span>
+
+  <nav class="tab-nav">
+    <button
+      [class.active]="activeTab === 'balance'"
+      (click)="switchTab('balance')"
+    >
+      <i class="lucide-layout-grid"></i> My Balance
+    </button>
+    <button [class.active]="activeTab === 'apply'" (click)="switchTab('apply')">
+      <i class="lucide-plus-circle"></i> Apply Leave
+    </button>
+    <button
+      [class.active]="activeTab === 'history'"
+      (click)="switchTab('history')"
+    >
+      <i class="lucide-history"></i> My History
+    </button>
+    <button
+      *ngIf="isHr || isCeo"
+      [class.active]="activeTab === 'approvals'"
+      (click)="switchTab('approvals')"
+    >
+      <i class="lucide-check-square"></i> Pending Approvals
+      <span class="badge-count" *ngIf="pendingRequests.length > 0">{{
+        pendingRequests.length
+      }}</span>
+    </button>
+    <button
+      *ngIf="isCeo"
+      [class.active]="activeTab === 'explorer'"
+      (click)="switchTab('explorer')"
+    >
+      <i class="lucide-search"></i> Leave Explorer
+    </button>
+  </nav>
+
+  <!-- My Balance Tab -->
+  <div class="tab-content" *ngIf="activeTab === 'balance'">
+    <div class="balance-grid">
+      <div class="balance-card" *ngFor="let bal of balances">
+        <div class="card-header">
+          <h3>{{ getLeaveTypeName(bal.leave_type_id) }}</h3>
+          <span class="year-badge">{{ bal.year }}</span>
+        </div>
+        <div class="stats-row">
+          <div class="stat">
+            <span class="label">Allocated</span>
+            <span class="value">{{ bal.allocated }}</span>
+          </div>
+          <div class="stat">
+            <span class="label">Used</span>
+            <span class="value used">{{ bal.used }}</span>
+          </div>
+          <div class="stat">
+            <span class="label">Remaining</span>
+            <span class="value remaining">{{ bal.allocated - bal.used }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Apply Leave Tab -->
+  <div class="tab-content" *ngIf="activeTab === 'apply'">
+    <div class="form-card">
+      <div class="form-group">
+        <label>Leave Type</label>
+        <select [(ngModel)]="newRequest.leave_type_id">
+          <option [ngValue]="null">Select Type</option>
+          <option *ngFor="let t of leaveTypes" [value]="t.id">
+            {{ t.name }}
+          </option>
+        </select>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Start Date</label>
+          <input type="date" [(ngModel)]="newRequest.start_date" />
+        </div>
+        <div class="form-group">
+          <label>End Date</label>
+          <input type="date" [(ngModel)]="newRequest.end_date" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Reason</label>
+        <textarea
+          [(ngModel)]="newRequest.reason"
+          placeholder="Briefly explain your reason..."
+        ></textarea>
+      </div>
+      <button class="btn-submit" (click)="applyLeave()">
+        Submit Application
+      </button>
+    </div>
+  </div>
+
+  <!-- My History Tab -->
+  <div class="tab-content" *ngIf="activeTab === 'history'">
+    <div class="table-card">
+      <table class="leave-table">
+        <thead>
+          <tr>
+            <th>Dates</th>
+            <th>Type</th>
+            <th>Days</th>
+            <th>Status</th>
+            <th>Approved By</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let req of myRequests">
+            <td>
+              <div class="date-range">
+                <span>{{ req.start_date }}</span>
+                <i class="lucide-arrow-right"></i>
+                <span>{{ req.end_date }}</span>
+              </div>
+            </td>
+            <td>{{ getLeaveTypeName(req.leave_type_id) }}</td>
+            <td>{{ req.total_days }}</td>
+            <td>
+              <span class="status-badge" [class]="req.status.toLowerCase()">
+                {{ req.status.replace("_", " ") }}
+              </span>
+            </td>
+            <td>
+              <div class="remarks">
+                <span *ngIf="req.hr_remarks" title="HR: {{ req.hr_remarks }}"
+                  >HR ✓</span
+                >
+                <span *ngIf="req.ceo_remarks" title="CEO: {{ req.ceo_remarks }}"
+                  >CEO ✓</span
+                >
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Pending Approvals Tab -->
+  <div class="tab-content" *ngIf="activeTab === 'approvals'">
+    <div class="approval-list">
+      <div class="approval-card" *ngFor="let req of pendingRequests">
+        <div class="req-header">
+          <div class="user">
+            <span class="emp-id">{{ req.emp_id }}</span>
+            <span class="type">{{ getLeaveTypeName(req.leave_type_id) }}</span>
+          </div>
+          <div class="stage-info">
+            <span
+              class="stage-badge"
+              [class.hr-stage]="req.status === 'PENDING'"
+              [class.ceo-stage]="req.status === 'APPROVED_BY_HR'"
+            >
+              {{ req.status === "PENDING" ? "Awaiting HR" : "Awaiting CEO" }}
+            </span>
+            <span class="days">{{ req.total_days }} Days</span>
+          </div>
+        </div>
+        <div class="req-body">
+          <p class="dates">{{ req.start_date }} to {{ req.end_date }}</p>
+          <p class="reason">"{{ req.reason }}"</p>
+          <div class="prev-step-info" *ngIf="req.hr_remarks">
+            <span class="approver-tag">HR Remarks:</span>
+            <span class="remarks-val">{{ req.hr_remarks }}</span>
+          </div>
+        </div>
+        <div class="req-footer">
+          <input
+            #remarksInput
+            type="text"
+            placeholder="Add remarks (optional)"
+            class="action-input"
+          />
+          <div class="btns">
+            <button
+              class="btn-approve"
+              (click)="approve(req, remarksInput.value)"
+            >
+              Approve
+            </button>
+            <button
+              class="btn-reject"
+              (click)="reject(req, remarksInput.value)"
+            >
+              Reject
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="empty-state" *ngIf="pendingRequests.length === 0">
+        <i class="lucide-check-circle"></i>
+        <p>No pending requests at this stage.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Leave Explorer Tab -->
+  <div class="tab-content" *ngIf="activeTab === 'explorer'">
+    <div class="explorer-card">
+      <div class="search-bar">
+        <input
+          type="text"
+          [(ngModel)]="explorerSearchTerm"
+          placeholder="Enter Employee ID (e.g. RBIS001)"
+          (keyup.enter)="searchEmployee()"
+        />
+        <button
+          class="btn-search"
+          (click)="searchEmployee()"
+          [disabled]="searchLoading"
+        >
+          <i class="lucide-search" *ngIf="!searchLoading"></i>
+          <span class="spinner-small" *ngIf="searchLoading"></span>
+          Search
+        </button>
+      </div>
+
+      <div *ngIf="explorerData" class="explorer-results">
+        <div class="emp-summary">
+          <div class="emp-info">
+            <h3>{{ explorerData.employee.full_name }}</h3>
+            <span class="badge-id">{{ explorerData.employee.emp_id }}</span>
+            <span class="designation">{{
+              explorerData.employee.designation
+            }}</span>
+          </div>
+        </div>
+
+        <div class="section-divider">Leave Balances</div>
+        <div class="balance-grid mini">
+          <div class="balance-card" *ngFor="let bal of explorerData.balances">
+            <div class="card-header">
+              <h3>{{ getLeaveTypeName(bal.leave_type_id) }}</h3>
+            </div>
+            <div class="stats-row">
+              <div class="stat">
+                <span class="label">Remaining</span>
+                <span class="value remaining">{{
+                  bal.allocated - bal.used
+                }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-divider">Leave History</div>
+        <div class="table-card">
+          <table class="leave-table">
+            <thead>
+              <tr>
+                <th>Dates</th>
+                <th>Type</th>
+                <th>Days</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let req of explorerData.history">
+                <td>{{ req.start_date }} - {{ req.end_date }}</td>
+                <td>{{ getLeaveTypeName(req.leave_type_id) }}</td>
+                <td>{{ req.total_days }}</td>
+                <td>
+                  <span class="status-badge" [class]="req.status.toLowerCase()">
+                    {{ req.status.replace("_", " ") }}
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div *ngIf="!explorerData && !searchLoading" class="explorer-empty">
+        <i class="lucide-search"></i>
+        <p>Search for an employee ID to see their leave details.</p>
+      </div>
+    </div>
   </div>
 </div>

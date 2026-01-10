@@ -17,10 +17,10 @@ def run():
         for e in emps:
             print(f"ID: {e.id} | EmpID: '{e.emp_id}' | Email: {e.email} | Name: {e.full_name}")
         
-        print("\n--- ATTENDANCE (First 20) ---")
-        recs = db.query(Attendance).limit(20).all()
+        print("\n--- ATTENDANCE (Present Records) ---")
+        recs = db.query(Attendance).filter(Attendance.attendance_status == 'Present').limit(20).all()
         for r in recs:
-            print(f"EmpID: '{r.emp_id}' | Date: {r.date} | Status: {r.attendance_status}")
+            print(f"EmpID: '{r.emp_id}' | Date: {r.date} | In: {r.in_duration} | Out: {r.out_duration} | LastOut: {r.last_out} | Status: {r.attendance_status}")
             
     finally:
         db.close()

@@ -8,6 +8,7 @@ class UserRole(str, enum.Enum):
     SUPER_ADMIN = "SUPER_ADMIN"
     HR = "HR"
     EMPLOYEE = "EMPLOYEE"
+    CEO = "CEO"
 
 class UserStatus(str, enum.Enum):
     ACTIVE = "ACTIVE"
@@ -44,10 +45,12 @@ class Attendance(Base):
     id = Column(Integer, primary_key=True, index=True)
     emp_id = Column(String(50), index=True, nullable=False)
     date = Column(Date, index=True, nullable=False)
-    first_in = Column(Time, nullable=True)
-    last_out = Column(Time, nullable=True)
+    first_in = Column(String(50), nullable=True)
+    last_out = Column(String(50), nullable=True)
     in_duration = Column(String(100), nullable=True)
     out_duration = Column(String(100), nullable=True)
+    total_duration = Column(String(100), nullable=True)
+    punch_records = Column(String(2000), nullable=True)
     attendance_status = Column(String(50))
     source_file = Column(String(255))
     is_manually_corrected = Column(Boolean, default=False)
@@ -70,3 +73,45 @@ class FileUploadLog(Base):
     report_type = Column(String(100))
     file_hash = Column(String(64), unique=True, index=True)
     file_path = Column(String(500))
+
+class LeaveType(Base):
+    __tablename__ = "leave_types"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(50), unique=True, index=True)
+    annual_quota = Column(Integer, default=12)
+    is_paid = Column(Boolean, default=True)
+    allow_carry_forward = Column(Boolean, default=False)
+    is_active = Column(Boolean, default=True)
+
+class LeaveBalance(Base):
+    __tablename__ = "leave_balances"
+    id = Column(Integer, primary_key=True, index=True)
+    emp_id = Column(String(50), ForeignKey("employees.emp_id"), index=True)
+    leave_type_id = Column(Integer, ForeignKey("leave_types.id"))
+    year = Column(Integer, index=True)
+    allocated = Column(Integer)
+    used = Column(Integer, default=0)
+
+class LeaveRequest(Base):
+    __tablename__ = "leave_requests"
+    id = Column(Integer, primary_key=True, index=True)
+    emp_id = Column(String(50), ForeignKey("employees.emp_id"), index=True)
+    leave_type_id = Column(Integer, ForeignKey("leave_types.id"))
+    start_date = Column(Date, nullable=False)
+    end_date = Column(Date, nullable=False)
+    total_days = Column(Integer)
+    reason = Column(String(500))
+    status = Column(String(20), default="PENDING") # PENDING, APPROVED_BY_HR, APPROVED (Final by CEO), REJECTED
+    hr_remarks = Column(String(500), nullable=True)
+    ceo_remarks = Column(String(500), nullable=True)
+    attachment_path = Column(String(255), nullable=True)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+class LeaveApprovalLog(Base):
+    __tablename__ = "leave_approval_logs"
+    id = Column(Integer, primary_key=True, index=True)
+    request_id = Column(Integer, ForeignKey("leave_requests.id"))
+    approver_id = Column(String(50), ForeignKey("employees.emp_id"))
+    action = Column(String(20)) # HR_APPROVED, CEO_APPROVED, REJECTED
+    remarks = Column(String(500), nullable=True)
+    action_at = Column(DateTime, default=datetime.datetime.utcnow)

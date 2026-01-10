@@ -63,7 +63,15 @@ export class DashboardComponent implements OnInit, OnDestroy {
     public barData: ChartConfiguration<'bar'>['data'] = { labels: [], datasets: [] };
     public lineData: ChartConfiguration<'line'>['data'] = { labels: [], datasets: [] };
     public pieData: ChartConfiguration<'pie'>['data'] = { labels: [], datasets: [] };
-    public stats = { present: 0, absent: 0, avgHours: 0, label: 'Latest' };
+    public stats = { 
+        present: 0, 
+        absent: 0, 
+        avgHours: 0, 
+        label: 'Latest', 
+        firstIn: '', 
+        lastOut: '',
+        totalDuration: ''
+    };
 
     constructor(
         private attendanceService: AttendanceService,
@@ -153,7 +161,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
     private processChartData(data: any[]) {
         if (!data || data.length === 0) {
-            this.stats = { present: 0, absent: 0, avgHours: 0, label: 'No Data' };
+            this.stats = { present: 0, absent: 0, avgHours: 0, label: 'No Data', firstIn: '--:--', lastOut: '--:--', totalDuration: '00:00' };
             this.barData = { labels: [], datasets: [] };
             this.lineData = { labels: [], datasets: [] };
             this.pieData = { labels: [], datasets: [] };
@@ -169,7 +177,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
             const absent = dayRecords.filter(d => d.Attendance === 'Absent').length;
 
             const presentRecords = dayRecords.filter(d => d.Attendance === 'Present');
-            const hours = presentRecords.map(r => this.parseDuration(r.In_Duration));
+            // Use Total_Duration if available, else fallback to In_Duration
+            const hours = presentRecords.map(r => this.parseDuration(r.Total_Duration || r.In_Duration));
             let avgH = hours.length > 0 ? hours.reduce((a, b) => a + b, 0) / hours.length : 0;
             if (avgH === 0 && present > 0) avgH = 8.0;
 
@@ -177,16 +186,37 @@ export class DashboardComponent implements OnInit, OnDestroy {
         });
 
         if (this.selectedEmp) {
+            const latestRecord = data[data.length - 1]; // Latest record for this emp
             const totalPresent = data.filter(d => d.Attendance === 'Present').length;
             const totalAbsent = data.filter(d => d.Attendance === 'Absent').length;
-            const hours = data.filter(d => d.Attendance === 'Present').map(r => this.parseDuration(r.In_Duration));
+            const hours = data.filter(d => d.Attendance === 'Present').map(r => this.parseDuration(r.Total_Duration || r.In_Duration));
             let totalAvgH = hours.length > 0 ? hours.reduce((a, b) => a + b, 0) / hours.length : 0;
             if (totalAvgH === 0 && totalPresent > 0) totalAvgH = 8.0;
 
-            this.stats = { present: totalPresent, absent: totalAbsent, avgHours: totalAvgH, label: 'Cumulative' };
+            this.stats = { 
+                present: totalPresent, 
+                absent: totalAbsent, 
+                avgHours: totalAvgH, 
+                label: 'Cumulative',
+                firstIn: latestRecord?.First_In || '--:--',
+                lastOut: latestRecord?.Last_Out || '--:--',
+                totalDuration: latestRecord?.Total_Duration || '--:--'
+            };
         } else {
-            const latest = dailyStats[dailyStats.length - 1] || { present: 0, absent: 0, avgH: 0 };
-            this.stats = { present: latest.present, absent: latest.absent, avgHours: latest.avgH, label: 'Latest Day' };
+            const latestDay = dailyStats[dailyStats.length - 1] || { present: 0, absent: 0, avgH: 0 };
+            const latestRecords = data.filter(d => String(d.Date) === latestDay.date);
+            // Just take first one for "Latest Day" pulse
+            const pulseRecord = latestRecords[0]; 
+
+            this.stats = { 
+                present: latestDay.present, 
+                absent: latestDay.absent, 
+                avgHours: latestDay.avgH, 
+                label: 'Latest Day',
+                firstIn: pulseRecord?.First_In || '--:--',
+                lastOut: pulseRecord?.Last_Out || '--:--',
+                totalDuration: pulseRecord?.Total_Duration || '--:--'
+            };
         }
 
         this.barData = {
@@ -225,15 +255,28 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
     exportToCSV() {
         if (!this.filteredData || this.filteredData.length === 0) return;
-        const headers = Object.keys(this.filteredData[0]);
+        
+        // Specific headers requested by user
+        const exportHeaders = [
+            'Date', 'empID', 'first In', 'Last out', 
+            'In duration', 'out duration', 'Attendance', 'total office duration'
+        ];
+        
         const csvRows = [
-            headers.join(','),
-            ...this.filteredData.map(row =>
-                headers.map(header => {
-                    const val = row[header];
-                    return typeof val === 'string' && val.includes(',') ? `"${val}"` : val;
-                }).join(',')
-            )
+            exportHeaders.join(','),
+            ...this.filteredData.map(row => [
+                row.Date,
+                row.EmpID,
+                row['First_In'] || '--:--',
+                row['Last_Out'] || '--:--',
+                row.In_Duration,
+                row.Out_Duration,
+                row.Attendance,
+                row['Total_Duration'] || '--:--'
+            ].map(val => {
+                const sVal = String(val);
+                return sVal.includes(',') ? `"${sVal}"` : sVal;
+            }).join(','))
         ];
         const csvContent = csvRows.join('\n');
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });

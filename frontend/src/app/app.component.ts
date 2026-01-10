@@ -18,6 +18,8 @@ export class AppComponent implements OnInit {
   title = 'Employee Attendance Analytics';
   alerts: Alert[] = [];
   isAdmin = false;
+  isHr = false;
+  isCeo = false;
   hasDashboardData = false;
   profileMenuOpen = false;
   currentUser: any = null;
@@ -38,6 +40,8 @@ export class AppComponent implements OnInit {
     this.authService.currentUser$.subscribe(user => {
       this.currentUser = user;
       this.isAdmin = user?.role === 'SUPER_ADMIN';
+      this.isHr = user?.role === 'HR' || user?.role === 'SUPER_ADMIN';
+      this.isCeo = user?.role === 'CEO' || user?.role === 'SUPER_ADMIN';
     });
 
     // Subscribe to data availability

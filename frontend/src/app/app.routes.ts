@@ -6,6 +6,7 @@ import { OnboardingComponent } from './components/onboarding/onboarding.componen
 import { RecordsComponent } from './components/records/records.component';
 import { ProfileComponent } from './components/profile/profile.component';
 import { LeaveManagementComponent } from './components/leave-management/leave-management.component';
+import { EmployeeManagementComponent } from './components/employee-management/employee-management.component';
 import { AuthGuard } from './guards/auth.guard';
 
 export const routes: Routes = [
@@ -14,6 +15,7 @@ export const routes: Routes = [
   { path: 'dashboard', component: DashboardComponent, canActivate: [AuthGuard] },
   { path: 'onboarding', component: OnboardingComponent, canActivate: [AuthGuard] },
   { path: 'records', component: RecordsComponent, canActivate: [AuthGuard] },
+  { path: 'employee-management', component: EmployeeManagementComponent, canActivate: [AuthGuard] },
   { path: 'profile', component: ProfileComponent, canActivate: [AuthGuard] },
   { path: 'leave-management', component: LeaveManagementComponent, canActivate: [AuthGuard] },
   { path: '', redirectTo: '/dashboard', pathMatch: 'full' },

@@ -28,6 +28,16 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     return user
 
 def check_admin(user: Employee = Depends(get_current_user)):
-    if user.role not in [UserRole.SUPER_ADMIN, UserRole.HR]:
+    if user.role not in [UserRole.SUPER_ADMIN, UserRole.HR, UserRole.CEO]:
         raise HTTPException(status_code=403, detail="Not enough permissions")
+    return user
+
+def check_hr(user: Employee = Depends(get_current_user)):
+    if user.role not in [UserRole.SUPER_ADMIN, UserRole.HR]:
+        raise HTTPException(status_code=403, detail="Only HR or Admin can perform this action")
+    return user
+
+def check_ceo(user: Employee = Depends(get_current_user)):
+    if user.role not in [UserRole.SUPER_ADMIN, UserRole.CEO]:
+        raise HTTPException(status_code=403, detail="Only CEO can perform this action")
     return user

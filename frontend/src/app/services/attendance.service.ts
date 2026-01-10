@@ -69,6 +69,10 @@ export class AttendanceService {
           EmpID: d.emp_id,
           In_Duration: d.in_duration,
           Out_Duration: d.out_duration,
+          Total_Duration: d.total_duration,
+          First_In: d.first_in,
+          Last_Out: d.last_out,
+          Punch_Records: d.punch_records,
           Attendance: d.attendance_status
         }));
 
@@ -77,6 +81,10 @@ export class AttendanceService {
           EmpID: d.emp_id,
           In_Duration: d.in_duration,
           Out_Duration: d.out_duration,
+          Total_Duration: d.total_duration,
+          First_In: d.first_in,
+          Last_Out: d.last_out,
+          Punch_Records: d.punch_records,
           Attendance: d.attendance_status
         }));
 

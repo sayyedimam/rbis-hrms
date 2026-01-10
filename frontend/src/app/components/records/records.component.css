@@ -7,92 +7,110 @@
 
 .record-card {
   background: white;
-  border-radius: 15px;
+  border-radius: 20px;
   padding: 1.5rem;
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-  border: 1px solid #f1f5f9;
-  transition: transform 0.2s;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e2e8f0;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
 }
 
 .record-card:hover {
-  transform: translateY(-3px);
-  border-color: #4f46e5;
+  transform: translateY(-5px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  border-color: #3b82f6;
 }
 
-.record-icon {
-  width: 50px;
-  height: 50px;
-  background: #eff6ff;
-  color: #3b82f6;
-  border-radius: 12px;
+.record-content {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.5rem;
+  flex-direction: column;
+  height: 100%;
+  gap: 1rem;
 }
 
-.record-info {
-  flex: 1;
+.file-name-container {
+  padding: 0.8rem 1rem;
+  background: #f8fafc;
+  border-radius: 12px;
+  border: 1px solid #f1f5f9;
 }
 
-.record-info h3 {
+.file-name-container h3 {
   font-size: 1rem;
   font-weight: 700;
   color: #1e293b;
-  margin-bottom: 0.4rem;
+  margin: 0;
   word-break: break-all;
 }
 
-.meta {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 0.5rem;
+.time-container {
+  padding-left: 0.5rem;
 }
 
-.badge {
-  font-size: 0.7rem;
-  font-weight: 800;
-  padding: 0.2rem 0.5rem;
-  background: #f1f5f9;
-  color: #475569;
-  border-radius: 4px;
-  text-transform: uppercase;
-}
-
-.date {
-  font-size: 0.75rem;
-  color: #94a3b8;
-}
-
-.uploader {
-  font-size: 0.8rem;
+.creation-time {
+  font-size: 0.85rem;
   color: #64748b;
-  margin: 0;
+  font-weight: 500;
 }
 
-.btn-download {
-  background: white;
-  color: #4f46e5;
-  border: 1px solid #e2e8f0;
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
+.card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-top: auto;
+}
+
+.uploader-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.8rem 1rem;
+  background: #eff6ff;
+  border-radius: 12px;
+  flex: 1;
+  max-width: 80%;
+}
+
+.uploader-info .label {
+  font-size: 0.75rem;
+  color: #3b82f6;
   font-weight: 600;
-  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.uploader-info .value {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #1e3a8a;
+  word-break: break-all;
+}
+
+.circle-download {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;        /* makes it a circle */
+  border: none;
+  background-color: #2563eb; /* blue – change if needed */
+  color: white;
+
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  justify-content: center;
+
   cursor: pointer;
-  transition: all 0.2s;
+  transition: background-color 0.2s ease;
 }
 
-.btn-download:hover {
-  background: #eff6ff;
-  border-color: #4f46e5;
+.circle-download:hover {
+  background-color: #1e40af;
 }
+
+.circle-download i {
+  font-size: 20px;
+}
+
 
 .loading-state, .no-records {
   text-align: center;

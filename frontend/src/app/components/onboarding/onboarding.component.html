@@ -25,11 +25,11 @@
               <div class="form-grid">
                 <div class="form-group">
                   <label>First Name</label>
-                  <input type="text" name="firstName" [(ngModel)]="employee.first_name" (input)="onNameChange()" required placeholder="John">
+                  <input type="text" name="firstName" [(ngModel)]="employee.first_name" (input)="onNameChange()" required placeholder="First Name">
                 </div>
                 <div class="form-group">
                   <label>Last Name</label>
-                  <input type="text" name="lastName" [(ngModel)]="employee.last_name" (input)="onNameChange()" required placeholder="Doe">
+                  <input type="text" name="lastName" [(ngModel)]="employee.last_name" (input)="onNameChange()" required placeholder="Last Name">
                 </div>
                 <div class="form-group full-width">
                   <label>Display Name (Full Name)</label>
@@ -41,16 +41,16 @@
                 </div>
                 <div class="form-group">
                   <label>Designation</label>
-                  <input type="text" name="designation" [(ngModel)]="employee.designation" required placeholder="Software Engineer">
+                  <input type="text" name="designation" [(ngModel)]="employee.designation" required placeholder="Designation">
                 </div>
                 <div class="form-group">
                   <label>Office Email</label>
-                  <input type="email" name="email" [(ngModel)]="employee.email" required placeholder="johnd@rbistech.com">
+                  <input type="email" name="email" [(ngModel)]="employee.email" required placeholder="Email">
                   <small>Auto-suggested based on name</small>
                 </div>
                 <div class="form-group">
                   <label>Phone Number</label>
-                  <input type="text" name="phone" [(ngModel)]="employee.phone_number" required placeholder="98XXXXXXXX">
+                  <input type="text" name="phone" [(ngModel)]="employee.phone_number" required placeholder="Phone Number">
                 </div>
               </div>
 

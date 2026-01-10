@@ -37,11 +37,14 @@
           <a routerLink="/dashboard" routerLinkActive="active" class="nav-item">
               <i class="lucide-layout-dashboard"></i> Analytics
           </a>
-          <a routerLink="/onboarding" routerLinkActive="active" class="nav-item" *ngIf="isAdmin">
+          <a routerLink="/onboarding" routerLinkActive="active" class="nav-item" *ngIf="isHr">
               <i class="lucide-user-plus"></i> OnBoarding
           </a>
-          <a routerLink="/records" routerLinkActive="active" class="nav-item" *ngIf="isAdmin">
+          <a routerLink="/records" routerLinkActive="active" class="nav-item" *ngIf="isHr">
               <i class="lucide-archive"></i> Records
+          </a>
+          <a routerLink="/employee-management" routerLinkActive="active" class="nav-item" *ngIf="isHr">
+              <i class="lucide-users"></i> Master Table
           </a>
           <a routerLink="/leave-management" routerLinkActive="active" class="nav-item">
               <i class="lucide-calendar"></i> Leaves

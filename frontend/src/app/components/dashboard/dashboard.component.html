@@ -63,6 +63,27 @@
                 </div>
             </div>
             <div class="stat-card">
+                <div class="stat-icon"><i class="lucide-log-in"></i></div>
+                <div class="stat-info">
+                    <span class="label">First In</span>
+                    <span class="value">{{ stats.firstIn }}</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon"><i class="lucide-log-out"></i></div>
+                <div class="stat-info">
+                    <span class="label">Last Out</span>
+                    <span class="value">{{ stats.lastOut }}</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon trend"><i class="lucide-hourglass"></i></div>
+                <div class="stat-info">
+                    <span class="label">Total Office Duration</span>
+                    <span class="value">{{ stats.totalDuration }}</span>
+                </div>
+            </div>
+            <div class="stat-card">
                 <div class="stat-icon trend"><i class="lucide-clock"></i></div>
                 <div class="stat-info">
                     <span class="label">Avg Hours ({{ stats.label }})</span>
