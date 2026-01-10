@@ -47,8 +47,8 @@
                 <label><i class="lucide-user"></i> Context</label>
                 <div class="static-value">Personal Dashboard</div>
             </div>
-            <button class="reset-btn" (click)="selectedDate=''; selectedEmp=''; applyFilters()"
-                *ngIf="selectedDate || selectedEmp">
+            <button class="reset-btn" (click)="resetFilters()"
+                *ngIf="selectedDate || (isAdmin && selectedEmp)">
                 Clear Filters
             </button>
         </div>

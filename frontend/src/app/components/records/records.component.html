@@ -1,0 +1,42 @@
+<div class="module-view-padding">
+    <section class="page-section">
+      <div class="section-header">
+        <div class="header-text">
+          <h2>Digital Vault</h2>
+          <p>Download and verify raw original biometric logs</p>
+        </div>
+      </div>
+
+      <div class="records-grid" *ngIf="!loading; else loader">
+        <div class="record-card" *ngFor="let record of records">
+          <div class="record-icon">
+            <i class="lucide-file-spreadsheet"></i>
+          </div>
+          <div class="record-info">
+            <h3>{{ record.filename }}</h3>
+            <div class="meta">
+              <span class="badge">{{ record.report_type }}</span>
+              <span class="date">{{ record.uploaded_at | date:'medium' }}</span>
+            </div>
+            <p class="uploader">Uploaded by: <strong>{{ record.uploaded_by }}</strong></p>
+          </div>
+          <button class="btn-download" (click)="download(record)">
+            <i class="lucide-download"></i>
+            Download
+          </button>
+        </div>
+
+        <div class="no-records" *ngIf="records.length === 0">
+          <i class="lucide-folder-open"></i>
+          <p>No historical records found.</p>
+        </div>
+      </div>
+
+      <ng-template #loader>
+        <div class="loading-state">
+          <div class="spinner"></div>
+          <p>Fetching records from vault...</p>
+        </div>
+      </ng-template>
+    </section>
+</div>

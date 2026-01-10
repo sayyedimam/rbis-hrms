@@ -128,6 +128,17 @@ export class DashboardComponent implements OnInit, OnDestroy {
         this.availableEmps = [...new Set(this.rawData.map(d => String(d['EmpID'])))].filter(id => id && id !== "null" && id !== "undefined").sort();
     }
 
+    resetFilters() {
+        this.selectedDate = '';
+        if (this.isAdmin) {
+            this.selectedEmp = '';
+        } else {
+            const user = this.authService.currentUser;
+            this.selectedEmp = user?.emp_id || '';
+        }
+        this.applyFilters();
+    }
+
     applyFilters() {
         let filtered = this.rawData;
         if (this.selectedDate) {
