@@ -7,7 +7,7 @@ def seed_leave_types():
     leave_types = [
         {"name": "Casual Leave", "annual_quota": 12, "is_paid": True, "allow_carry_forward": False},
         {"name": "Sick Leave", "annual_quota": 8, "is_paid": True, "allow_carry_forward": True},
-        {"name": "Earned Leave", "annual_quota": 15, "is_paid": True, "allow_carry_forward": True},
+        {"name": "Paid Leave", "annual_quota": 15, "is_paid": True, "allow_carry_forward": True},
         {"name": "Unpaid Leave", "annual_quota": 0, "is_paid": False, "allow_carry_forward": False},
     ]
 

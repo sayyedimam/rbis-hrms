@@ -8,6 +8,7 @@ import { Subscription } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
 import { UploadComponent } from '../upload/upload.component';
 import { RouterModule } from '@angular/router';
+import { NotificationService } from '../../services/notification.service';
 
 Chart.register(...registerables);
 
@@ -22,6 +23,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
     loading = false;
     hasData = false;
     isAdmin = false;
+    
+    // Edit State
+    editingRecord: any = null;
+    isSaving = false;
 
     // Raw Data Storage
     private rawData: any[] = [];
@@ -40,19 +45,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
     private subs = new Subscription();
 
-    // Shared Options
-    public barChartOptions: ChartOptions<'bar'> = {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: { y: { min: 0, title: { display: true, text: 'Count' } } },
-        plugins: { legend: { display: true } }
-    };
-    public lineChartOptions: ChartOptions<'line'> = {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: { legend: { display: true } },
-        scales: { y: { beginAtZero: true, title: { display: true, text: 'Hours' } } }
-    };
     public pieChartOptions: ChartOptions<'pie'> = {
         responsive: true,
         maintainAspectRatio: false,
@@ -66,16 +58,54 @@ export class DashboardComponent implements OnInit, OnDestroy {
     public stats = { 
         present: 0, 
         absent: 0, 
+        onLeave: 0,
         avgHours: 0, 
         label: 'Latest', 
         firstIn: '', 
         lastOut: '',
+        inDuration: '',
+        outDuration: '',
         totalDuration: ''
+    };
+
+    public barChartOptions: ChartOptions<'bar'> = {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: { y: { min: 0, title: { display: true, text: 'Count' } } },
+        plugins: { 
+            legend: { display: true },
+            tooltip: {
+                callbacks: {
+                    footer: (tooltipItems: any) => {
+                        const date = tooltipItems[0].label;
+                        if (this.selectedEmp) {
+                            const rec = this.rawData.find(d => String(d.Date) === date && String(d.EmpID) === this.selectedEmp);
+                            if (rec) {
+                                return [
+                                    `In: ${rec.First_In || '--:--'}`,
+                                    `Out: ${rec.Last_Out || '--:--'}`,
+                                    `Duration: ${rec.Total_Duration || '--:--'}`
+                                ].join('\n');
+                            }
+                        }
+                        return '';
+                    }
+                }
+            }
+        }
+    };
+
+    public lineChartOptions: ChartOptions<'line'> = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: true } },
+        scales: { y: { beginAtZero: true, title: { display: true, text: 'Hours' } } }
     };
 
     constructor(
         private attendanceService: AttendanceService,
-        public authService: AuthService
+        public authService: AuthService,
+        private notificationService: NotificationService
     ) { }
 
     ngOnInit() {
@@ -84,7 +114,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
         if (!this.isAdmin && user) {
             this.selectedEmp = user.emp_id;
         }
-        
+
         // Fetch data from DB on init
         this.attendanceService.fetchAttendance();
 
@@ -132,8 +162,15 @@ export class DashboardComponent implements OnInit, OnDestroy {
     }
 
     updateFilterOptions() {
-        this.availableDates = [...new Set(this.rawData.map(d => String(d.Date)))].filter(d => d && d !== "null").sort();
-        this.availableEmps = [...new Set(this.rawData.map(d => String(d['EmpID'])))].filter(id => id && id !== "null" && id !== "undefined").sort();
+        const today = new Date().toISOString().split('T')[0];
+        
+        this.availableDates = [...new Set(this.rawData.map(d => String(d.Date)))]
+            .filter(d => d && d !== "null" && d <= today)
+            .sort();
+            
+        this.availableEmps = [...new Set(this.rawData.map(d => String(d['EmpID'])))]
+            .filter(id => id && id !== "null" && id !== "undefined")
+            .sort();
     }
 
     resetFilters() {
@@ -148,7 +185,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
     }
 
     applyFilters() {
-        let filtered = this.rawData;
+        const today = new Date().toISOString().split('T')[0];
+        let filtered = this.rawData.filter(d => String(d.Date) <= today);
+        
         if (this.selectedDate) {
             filtered = filtered.filter(d => String(d.Date) === this.selectedDate);
         }
@@ -161,7 +200,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
     private processChartData(data: any[]) {
         if (!data || data.length === 0) {
-            this.stats = { present: 0, absent: 0, avgHours: 0, label: 'No Data', firstIn: '--:--', lastOut: '--:--', totalDuration: '00:00' };
+            this.stats = { 
+                present: 0, absent: 0, onLeave: 0, avgHours: 0, label: 'No Data', 
+                firstIn: '--:--', lastOut: '--:--', inDuration: '--:--', outDuration: '--:--', totalDuration: '00:00' 
+            };
             this.barData = { labels: [], datasets: [] };
             this.lineData = { labels: [], datasets: [] };
             this.pieData = { labels: [], datasets: [] };
@@ -175,19 +217,37 @@ export class DashboardComponent implements OnInit, OnDestroy {
             const dayRecords = data.filter(d => String(d.Date) === date);
             const present = dayRecords.filter(d => d.Attendance === 'Present').length;
             const absent = dayRecords.filter(d => d.Attendance === 'Absent').length;
+            const onLeave = dayRecords.filter(d => d.Attendance === 'On Leave').length;
 
             const presentRecords = dayRecords.filter(d => d.Attendance === 'Present');
-            // Use Total_Duration if available, else fallback to In_Duration
             const hours = presentRecords.map(r => this.parseDuration(r.Total_Duration || r.In_Duration));
             let avgH = hours.length > 0 ? hours.reduce((a, b) => a + b, 0) / hours.length : 0;
             if (avgH === 0 && present > 0) avgH = 8.0;
 
-            return { date, present, absent, avgH };
+            return { date, present, absent, onLeave, avgH };
         });
 
-        if (this.selectedEmp) {
-            const latestRecord = data[data.length - 1]; // Latest record for this emp
+        // Determine context for stats
+        if (this.selectedDate && this.selectedEmp) {
+            // Specific day for specific employee
+            const rec = data[0]; 
+            this.stats = {
+                present: rec.Attendance === 'Present' ? 1 : 0,
+                absent: rec.Attendance === 'Absent' ? 1 : 0,
+                onLeave: rec.Attendance === 'On Leave' ? 1 : 0,
+                avgHours: rec.Attendance === 'Present' ? this.parseDuration(rec.Total_Duration || rec.In_Duration) : 0,
+                label: 'Selected Day',
+                firstIn: rec.First_In || '--:--',
+                lastOut: rec.Last_Out || '--:--',
+                inDuration: rec.In_Duration || '--:--',
+                outDuration: rec.Out_Duration || '--:--',
+                totalDuration: rec.Total_Duration || '--:--'
+            };
+        } else if (this.selectedEmp) {
+            // Cumulative for employee
+            const latestRecord = data[data.length - 1];
             const totalPresent = data.filter(d => d.Attendance === 'Present').length;
+            const totalOnLeave = data.filter(d => d.Attendance === 'On Leave').length;
             const totalAbsent = data.filter(d => d.Attendance === 'Absent').length;
             const hours = data.filter(d => d.Attendance === 'Present').map(r => this.parseDuration(r.Total_Duration || r.In_Duration));
             let totalAvgH = hours.length > 0 ? hours.reduce((a, b) => a + b, 0) / hours.length : 0;
@@ -196,38 +256,53 @@ export class DashboardComponent implements OnInit, OnDestroy {
             this.stats = { 
                 present: totalPresent, 
                 absent: totalAbsent, 
+                onLeave: totalOnLeave,
                 avgHours: totalAvgH, 
                 label: 'Cumulative',
                 firstIn: latestRecord?.First_In || '--:--',
                 lastOut: latestRecord?.Last_Out || '--:--',
+                inDuration: latestRecord?.In_Duration || '--:--',
+                outDuration: latestRecord?.Out_Duration || '--:--',
                 totalDuration: latestRecord?.Total_Duration || '--:--'
             };
         } else {
-            const latestDay = dailyStats[dailyStats.length - 1] || { present: 0, absent: 0, avgH: 0 };
-            const latestRecords = data.filter(d => String(d.Date) === latestDay.date);
-            // Just take first one for "Latest Day" pulse
+            // Latest day for organization or specific day for organization
+            const targetDay = this.selectedDate ? dailyStats[0] : dailyStats[dailyStats.length - 1];
+            const latestRecords = data.filter(d => String(d.Date) === targetDay.date);
             const pulseRecord = latestRecords[0]; 
 
             this.stats = { 
-                present: latestDay.present, 
-                absent: latestDay.absent, 
-                avgHours: latestDay.avgH, 
-                label: 'Latest Day',
+                present: targetDay.present, 
+                absent: targetDay.absent, 
+                onLeave: targetDay.onLeave,
+                avgHours: targetDay.avgH, 
+                label: this.selectedDate ? 'Selected Day' : 'Latest Day',
                 firstIn: pulseRecord?.First_In || '--:--',
                 lastOut: pulseRecord?.Last_Out || '--:--',
+                inDuration: pulseRecord?.In_Duration || '--:--',
+                outDuration: pulseRecord?.Out_Duration || '--:--',
                 totalDuration: pulseRecord?.Total_Duration || '--:--'
             };
         }
 
         this.barData = {
             labels: labels,
-            datasets: [{
-                data: dailyStats.map(s => s.present),
-                label: 'Present',
-                backgroundColor: '#4f46e5',
-                borderRadius: 6,
-                barThickness: labels.length > 10 ? undefined : 30
-            }]
+            datasets: [
+                {
+                    data: dailyStats.map(s => s.present),
+                    label: 'Present',
+                    backgroundColor: '#4f46e5',
+                    borderRadius: 6,
+                    barThickness: labels.length > 10 ? undefined : 30
+                },
+                {
+                    data: dailyStats.map(s => s.onLeave),
+                    label: 'On Leave',
+                    backgroundColor: '#93c5fd', // Light blue for leave
+                    borderRadius: 6,
+                    barThickness: labels.length > 10 ? undefined : 30
+                }
+            ]
         };
 
         this.lineData = {
@@ -242,12 +317,12 @@ export class DashboardComponent implements OnInit, OnDestroy {
             }]
         };
 
-        const currentSnapshot = this.selectedEmp ? { present: this.stats.present, absent: this.stats.absent } : (dailyStats[dailyStats.length - 1] || { present: 0, absent: 0 });
+        const currentSnapshot = this.selectedEmp ? { present: this.stats.present, absent: this.stats.absent, onLeave: this.stats.onLeave } : (dailyStats[dailyStats.length - 1] || { present: 0, absent: 0, onLeave: 0 });
         this.pieData = {
-            labels: ['Present', 'Absent'],
+            labels: ['Present', 'Absent', 'On Leave'],
             datasets: [{
-                data: [currentSnapshot.present, currentSnapshot.absent],
-                backgroundColor: ['#4f46e5', '#f87171'],
+                data: [currentSnapshot.present, currentSnapshot.absent, currentSnapshot.onLeave],
+                backgroundColor: ['#4f46e5', '#f87171', '#93c5fd'],
                 borderWidth: 0
             }]
         };
@@ -303,5 +378,42 @@ export class DashboardComponent implements OnInit, OnDestroy {
             const num = Number(s);
             return isNaN(num) ? 0 : num;
         } catch { return 0; }
+    }
+
+    get tableData() {
+        return this.filteredData;
+    }
+
+    openEditModal(record: any) {
+        // Clone to prevent direct mutation
+        this.editingRecord = { ...record };
+    }
+
+    closeEditModal() {
+        this.editingRecord = null;
+    }
+
+    saveRecord() {
+        if (!this.editingRecord) return;
+        this.isSaving = true;
+
+        const payload = {
+            first_in: this.editingRecord.First_In,
+            last_out: this.editingRecord.Last_Out,
+            attendance_status: this.editingRecord.Attendance
+        };
+
+        this.attendanceService.updateAttendance(this.editingRecord.id, payload).subscribe({
+            next: () => {
+                this.notificationService.showAlert('Record updated successfully', 'success');
+                this.isSaving = false;
+                this.closeEditModal();
+                this.attendanceService.fetchAttendance(); // Refresh data
+            },
+            error: (err) => {
+                this.isSaving = false;
+                this.notificationService.showAlert('Failed to update record', 'error');
+            }
+        });
     }
 }

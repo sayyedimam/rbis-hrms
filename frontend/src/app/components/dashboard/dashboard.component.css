@@ -327,6 +327,11 @@
     color: #ef4444;
 }
 
+.stat-icon.leave {
+    background: #fdf4ff;
+    color: #c026d3;
+}
+
 .stat-info .label {
     display: block;
     font-size: 0.85rem;

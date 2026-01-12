@@ -2,7 +2,7 @@
   <div class="auth-card">
     <div class="auth-header">
       <div class="logo">
-        <i class="lucide-shield"></i>
+        <i data-lucide="shield"></i>
         <span>RBIS Tech Pvt Ltd</span>
       </div>
       <h1>Welcome Back</h1>
@@ -13,16 +13,17 @@
       <div class="form-group">
         <label for="email">Office Email</label>
         <div class="input-wrapper">
-          <i class="lucide-mail"></i>
-          <input 
-            type="email" 
-            id="email" 
-            name="email" 
-            [(ngModel)]="loginData.email" 
-            placeholder="email@office.com" 
+          <i data-lucide="mail"></i>
+          <input
+            type="email"
+            id="email"
+            name="email"
+            [(ngModel)]="loginData.email"
+            placeholder="email@office.com"
             required
             email
-            #email="ngModel">
+            #email="ngModel"
+          />
         </div>
         <div *ngIf="email.invalid && email.touched" class="field-error">
           Valid office email required
@@ -32,25 +33,26 @@
       <div class="form-group">
         <label for="password">Password</label>
         <div class="input-wrapper">
-          <i class="lucide-lock"></i>
-          <input 
-            type="password" 
-            id="password" 
-            name="password" 
-            [(ngModel)]="loginData.password" 
-            placeholder="••••••••" 
-            required>
+          <i data-lucide="lock"></i>
+          <input
+            type="password"
+            id="password"
+            name="password"
+            [(ngModel)]="loginData.password"
+            placeholder="••••••••"
+            required
+          />
         </div>
       </div>
 
       <div *ngIf="error" class="error-msg">
-        <i class="lucide-alert-circle"></i>
+        <i data-lucide="alert-circle"></i>
         {{ error }}
       </div>
 
       <button type="submit" [disabled]="!loginForm.valid" class="btn-primary">
         <span>Login to Dashboard</span>
-        <i class="lucide-arrow-right"></i>
+        <i data-lucide="arrow-right"></i>
       </button>
 
       <div class="auth-footer">

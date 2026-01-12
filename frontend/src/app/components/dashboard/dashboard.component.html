@@ -1,141 +1,279 @@
 <div class="module-view-padding">
-    <div class="admin-top-section" *ngIf="isAdmin">
-        <section class="page-section">
-            <div class="section-header">
-                <div class="header-text">
-                  <h2>System Ingestion</h2>
-                  <p>Drop multi-format logs to keep the system up to date</p>
-                </div>
-            </div>
-            <app-upload></app-upload>
-        </section>
+  <div class="admin-top-section" *ngIf="isAdmin">
+    <section class="page-section">
+      <div class="section-header">
+        <div class="header-text">
+          <h2>System Ingestion</h2>
+          <p>Drop multi-format logs to keep the system up to date</p>
+        </div>
+      </div>
+      <app-upload></app-upload>
+    </section>
+  </div>
+
+  <div class="no-data-msg" *ngIf="!hasData && !loading">
+    <i data-lucide="database"></i>
+    <h3>No Records Found</h3>
+    <p>Your attendance data hasn't been synced for this period yet.</p>
+  </div>
+
+  <div class="data-view" *ngIf="hasData || loading">
+    <div class="dashboard-header">
+      <h2 class="section-title">Attendance Intelligence</h2>
+      <div class="header-actions">
+        <button
+          class="btn-export"
+          (click)="exportToCSV()"
+          title="Download current view as CSV"
+        >
+          <i data-lucide="download"></i> Export Analytics
+        </button>
+      </div>
     </div>
 
-    <div class="no-data-msg" *ngIf="!hasData && !loading">
-        <i class="lucide-database"></i>
-        <h3>No Records Found</h3>
-        <p>Your attendance data hasn't been synced for this period yet.</p>
+    <!-- Filters Bar -->
+    <div class="filter-bar" *ngIf="!loading && hasData">
+      <div class="filter-group">
+        <label><i data-lucide="calendar"></i> Period</label>
+        <select [(ngModel)]="selectedDate" (change)="applyFilters()">
+          <option value="">All Dates</option>
+          <option *ngFor="let date of availableDates" [value]="date">
+            {{ date }}
+          </option>
+        </select>
+      </div>
+      <div class="filter-group" *ngIf="isAdmin">
+        <label><i data-lucide="user"></i> Context</label>
+        <select [(ngModel)]="selectedEmp" (change)="applyFilters()">
+          <option value="">Organization Wide</option>
+          <option *ngFor="let emp of availableEmps" [value]="emp">
+            {{ emp }}
+          </option>
+        </select>
+      </div>
+      <div class="filter-group personal-context" *ngIf="!isAdmin">
+        <label><i data-lucide="user"></i> Context</label>
+        <div class="static-value">Personal Dashboard</div>
+      </div>
+      <button
+        class="reset-btn"
+        (click)="resetFilters()"
+        *ngIf="selectedDate || (isAdmin && selectedEmp)"
+      >
+        Clear Filters
+      </button>
     </div>
 
-    <div class="data-view" *ngIf="hasData || loading">
-        <div class="dashboard-header">
-            <h2 class="section-title">Attendance Intelligence</h2>
-            <div class="header-actions">
-                <button class="btn-export" (click)="exportToCSV()" title="Download current view as CSV">
-                    <i class="lucide-download"></i> Export Analytics
+    <!-- Stats Section -->
+    <div class="stats-grid" *ngIf="!loading && hasData">
+      <div class="stat-card">
+        <div class="stat-icon"><i data-lucide="users"></i></div>
+        <div class="stat-info">
+          <span class="label">Present ({{ stats.label }})</span>
+          <span class="value">{{ stats.present }}</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon alert"><i data-lucide="user-x"></i></div>
+        <div class="stat-info">
+          <span class="label">Absent ({{ stats.label }})</span>
+          <span class="value">{{ stats.absent }}</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon leave"><i data-lucide="palm-tree"></i></div>
+        <div class="stat-info">
+          <span class="label">On Leave ({{ stats.label }})</span>
+          <span class="value">{{ stats.onLeave }}</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon"><i data-lucide="log-in"></i></div>
+        <div class="stat-info">
+          <span class="label">First In</span>
+          <span class="value">{{ stats.firstIn }}</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon"><i data-lucide="log-out"></i></div>
+        <div class="stat-info">
+          <span class="label">Last Out</span>
+          <span class="value">{{ stats.lastOut }}</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon trend"><i data-lucide="history"></i></div>
+        <div class="stat-info">
+          <span class="label">In Duration</span>
+          <span class="value">{{ stats.inDuration }}</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon trend"><i data-lucide="timer"></i></div>
+        <div class="stat-info">
+          <span class="label">Out Duration</span>
+          <span class="value">{{ stats.outDuration }}</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon trend"><i data-lucide="hourglass"></i></div>
+        <div class="stat-info">
+          <span class="label">Total Office Duration</span>
+          <span class="value">{{ stats.totalDuration }}</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon trend"><i data-lucide="clock"></i></div>
+        <div class="stat-info">
+          <span class="label">Avg Hours ({{ stats.label }})</span>
+          <span class="value">{{ stats.avgHours | number : "1.1-1" }}h</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Charts Grid -->
+    <div class="charts-grid" *ngIf="!loading && hasData">
+      <div
+        class="chart-card"
+        [class.large]="showTrendChart"
+        *ngIf="showTrendChart"
+      >
+        <div class="chart-header">
+          <h3>Presence Trend</h3>
+          <p>Daily employee attendance overview</p>
+        </div>
+        <div class="chart-box">
+          <canvas
+            baseChart
+            [data]="barData"
+            [options]="barChartOptions"
+            type="bar"
+          ></canvas>
+        </div>
+      </div>
+
+      <div class="chart-card" *ngIf="showTrendChart">
+        <div class="chart-header">
+          <h3>Efficiency Analysis</h3>
+          <p>Average working hours over time</p>
+        </div>
+        <div class="chart-box">
+          <canvas
+            baseChart
+            [data]="lineData"
+            [options]="lineChartOptions"
+            type="line"
+          ></canvas>
+        </div>
+      </div>
+
+      <div class="chart-card" [class.large]="!showTrendChart">
+        <div class="chart-header">
+          <h3>Status Distribution</h3>
+          <p>Presence vs Absence breakdown ({{ stats.label }})</p>
+        </div>
+        <div class="chart-box small">
+          <canvas
+            baseChart
+            [data]="pieData"
+            [options]="pieChartOptions"
+            type="pie"
+          ></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Detailed Records Table -->
+    <div class="table-section" *ngIf="!loading && hasData">
+      <div class="section-title-row">
+        <h3>Detailed Records</h3>
+        <span class="badg">{{ tableData.length }} Entries</span>
+      </div>
+      <div class="table-responsive">
+        <table class="analytics-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>EmpID</th>
+              <th>First In</th>
+              <th>Last Out</th>
+              <th>Total Duration</th>
+              <th>Status</th>
+              <th *ngIf="isAdmin">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of tableData">
+              <td>{{ row.Date }}</td>
+              <td>{{ row.EmpID }}</td>
+              <td>{{ row.First_In || "--:--" }}</td>
+              <td>{{ row.Last_Out || "--:--" }}</td>
+              <td>{{ row.Total_Duration || row.In_Duration || "--:--" }}</td>
+              <td>
+                <span
+                  class="status-badge"
+                  [class]="row.Attendance | lowercase"
+                  >{{ row.Attendance }}</span
+                >
+              </td>
+              <td *ngIf="isAdmin">
+                <button class="btn-icon-edit" (click)="openEditModal(row)">
+                  <i data-lucide="pencil"></i>
                 </button>
-            </div>
-        </div>
-
-        <!-- Filters Bar -->
-        <div class="filter-bar" *ngIf="!loading && hasData">
-            <div class="filter-group">
-                <label><i class="lucide-calendar"></i> Period</label>
-                <select [(ngModel)]="selectedDate" (change)="applyFilters()">
-                    <option value="">All Dates</option>
-                    <option *ngFor="let date of availableDates" [value]="date">{{ date }}</option>
-                </select>
-            </div>
-            <div class="filter-group" *ngIf="isAdmin">
-                <label><i class="lucide-user"></i> Context</label>
-                <select [(ngModel)]="selectedEmp" (change)="applyFilters()">
-                    <option value="">Organization Wide</option>
-                    <option *ngFor="let emp of availableEmps" [value]="emp">{{ emp }}</option>
-                </select>
-            </div>
-            <div class="filter-group personal-context" *ngIf="!isAdmin">
-                <label><i class="lucide-user"></i> Context</label>
-                <div class="static-value">Personal Dashboard</div>
-            </div>
-            <button class="reset-btn" (click)="resetFilters()"
-                *ngIf="selectedDate || (isAdmin && selectedEmp)">
-                Clear Filters
-            </button>
-        </div>
-
-        <!-- Stats Section -->
-        <div class="stats-grid" *ngIf="!loading && hasData">
-            <div class="stat-card">
-                <div class="stat-icon"><i class="lucide-users"></i></div>
-                <div class="stat-info">
-                    <span class="label">Present ({{ stats.label }})</span>
-                    <span class="value">{{ stats.present }}</span>
-                </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon"><i class="lucide-log-in"></i></div>
-                <div class="stat-info">
-                    <span class="label">First In</span>
-                    <span class="value">{{ stats.firstIn }}</span>
-                </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon"><i class="lucide-log-out"></i></div>
-                <div class="stat-info">
-                    <span class="label">Last Out</span>
-                    <span class="value">{{ stats.lastOut }}</span>
-                </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon trend"><i class="lucide-hourglass"></i></div>
-                <div class="stat-info">
-                    <span class="label">Total Office Duration</span>
-                    <span class="value">{{ stats.totalDuration }}</span>
-                </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon trend"><i class="lucide-clock"></i></div>
-                <div class="stat-info">
-                    <span class="label">Avg Hours ({{ stats.label }})</span>
-                    <span class="value">{{ stats.avgHours | number:'1.1-1' }}h</span>
-                </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon alert"><i class="lucide-user-x"></i></div>
-                <div class="stat-info">
-                    <span class="label">Absent ({{ stats.label }})</span>
-                    <span class="value">{{ stats.absent }}</span>
-                </div>
-            </div>
-        </div>
-
-        <!-- Charts Grid -->
-        <div class="charts-grid" *ngIf="!loading && hasData">
-            <div class="chart-card" [class.large]="showTrendChart" *ngIf="showTrendChart">
-                <div class="chart-header">
-                    <h3>Presence Trend</h3>
-                    <p>Daily employee attendance overview</p>
-                </div>
-                <div class="chart-box">
-                    <canvas baseChart [data]="barData" [options]="barChartOptions" type="bar"></canvas>
-                </div>
-            </div>
-
-            <div class="chart-card" *ngIf="showTrendChart">
-                <div class="chart-header">
-                    <h3>Efficiency Analysis</h3>
-                    <p>Average working hours over time</p>
-                </div>
-                <div class="chart-box">
-                    <canvas baseChart [data]="lineData" [options]="lineChartOptions" type="line"></canvas>
-                </div>
-            </div>
-
-            <div class="chart-card" [class.large]="!showTrendChart">
-                <div class="chart-header">
-                    <h3>Status Distribution</h3>
-                    <p>Presence vs Absence breakdown ({{ stats.label }})</p>
-                </div>
-                <div class="chart-box small">
-                    <canvas baseChart [data]="pieData" [options]="pieChartOptions" type="pie"></canvas>
-                </div>
-            </div>
-        </div>
-
-        <!-- Loading Overlay -->
-        <div class="loading-state" *ngIf="loading">
-            <div class="spinner"></div>
-            <p>Analyzing workforce data...</p>
-        </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
+
+    <!-- Edit Modal -->
+    <div class="modal-overlay" *ngIf="editingRecord">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3>Manual Correction</h3>
+          <button class="close-btn" (click)="closeEditModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label>First In</label>
+            <input
+              type="text"
+              [(ngModel)]="editingRecord.First_In"
+              placeholder="HH:MM:SS"
+            />
+          </div>
+          <div class="form-group">
+            <label>Last Out</label>
+            <input
+              type="text"
+              [(ngModel)]="editingRecord.Last_Out"
+              placeholder="HH:MM:SS"
+            />
+          </div>
+          <div class="form-group">
+            <label>Status</label>
+            <select [(ngModel)]="editingRecord.Attendance">
+              <option value="Present">Present</option>
+              <option value="Absent">Absent</option>
+              <option value="On Leave">On Leave</option>
+              <option value="Half Day">Half Day</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-cancel" (click)="closeEditModal()">Cancel</button>
+          <button class="btn-save" (click)="saveRecord()" [disabled]="isSaving">
+            {{ isSaving ? "Saving..." : "Update Record" }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-state" *ngIf="loading">
+      <div class="spinner"></div>
+      <p>Analyzing workforce data...</p>
+    </div>
+  </div>
 </div>

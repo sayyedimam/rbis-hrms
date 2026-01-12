@@ -19,16 +19,20 @@ body {
     --bg-card: #ffffff;
 }
 
-/* Lucide Icon Font Placeholder - In real apps we'd use lucide-angular components */
-[class^="lucide-"] {
+/* Lucide Icon Styling */
+.lucide, [data-lucide], [class^="lucide-"] {
     display: inline-block;
-    width: 20px;
-    height: 20px;
+    width: 1.25rem;
+    height: 1.25rem;
     stroke: currentColor;
     stroke-width: 2;
     stroke-linecap: round;
     stroke-linejoin: round;
     fill: none;
     vertical-align: middle;
-    margin-right: 8px;
+}
+
+/* Ensure icons inside buttons don't have extra margin */
+button .lucide, button [data-lucide] {
+    margin: 0;
 }

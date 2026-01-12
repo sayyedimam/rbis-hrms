@@ -76,15 +76,27 @@ def detect_and_clean_memory(file_content):
                             if first_in == "--:--" and ":" in in_dur: first_in = in_dur
                             if last_out == "--:--" and ":" in out_dur: last_out = out_dur
 
-                            # Calculate Total Duration (Sum of In + Out columns)
+                            # Calculate Total Duration (Actual Span between First In and Last Out)
                             total_duration = "00:00"
                             try:
                                 def to_min(ts):
                                     if ':' not in str(ts): return 0
-                                    h, m = map(int, str(ts).split(':'))
-                                    return h * 60 + m
-                                total_min = to_min(in_dur) + to_min(out_dur)
-                                total_duration = f"{total_min // 60:02d}:{total_min % 60:02d}"
+                                    try:
+                                        # Handle cases like "10:02(in)" or just "10:02"
+                                        clean_ts = re.sub(r'\(.*?\)', '', str(ts)).strip()
+                                        h, m = map(int, clean_ts.split(':')[:2])
+                                        return h * 60 + m
+                                    except: return 0
+                                
+                                # Use span between First In and Last Out for "Total Office Duration"
+                                if first_in != "--:--" and last_out != "--:--":
+                                    span_min = to_min(last_out) - to_min(first_in)
+                                    if span_min < 0: span_min = 0 # Handle overnight if needed, but usually daily
+                                    total_duration = f"{span_min // 60:02d}:{span_min % 60:02d}"
+                                else:
+                                    # Fallback to sum of provided durations
+                                    total_min = to_min(in_dur) + to_min(out_dur)
+                                    total_duration = f"{total_min // 60:02d}:{total_min % 60:02d}"
                             except: pass
 
                             if not current_attendance_date:

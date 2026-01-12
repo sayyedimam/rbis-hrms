@@ -5,13 +5,13 @@
       <p>View, edit, or remove employee records from the system.</p>
     </div>
     <div class="search-box">
-      <i class="lucide-search"></i>
-      <input 
-        type="text" 
-        [(ngModel)]="searchTerm" 
-        (ngModelChange)="filterEmployees()" 
-        placeholder="Search by name, ID or email..."
-      >
+      <i data-lucide="search"></i>
+      <input
+        type="text"
+        [(ngModel)]="searchTerm"
+        (ngModelChange)="filterEmployees()"
+        placeholder="Search by name, ID..."
+      />
     </div>
   </div>
 
@@ -24,7 +24,7 @@
           <th>Email</th>
           <th>Phone</th>
           <th>Designation</th>
-          <th>Actions</th>
+          <th *ngIf="canEdit">Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -33,47 +33,83 @@
             <ng-container *ngIf="editingEmployee?.id !== emp.id">
               <span class="badge-id">{{ emp.emp_id }}</span>
             </ng-container>
-            <input *ngIf="editingEmployee?.id === emp.id" [(ngModel)]="editingEmployee.emp_id" class="edit-input">
+            <input
+              *ngIf="editingEmployee?.id === emp.id"
+              [(ngModel)]="editingEmployee.emp_id"
+              class="edit-input"
+            />
           </td>
           <td>
             <ng-container *ngIf="editingEmployee?.id !== emp.id">
               {{ emp.full_name }}
             </ng-container>
-            <input *ngIf="editingEmployee?.id === emp.id" [(ngModel)]="editingEmployee.full_name" class="edit-input">
+            <input
+              *ngIf="editingEmployee?.id === emp.id"
+              [(ngModel)]="editingEmployee.full_name"
+              class="edit-input"
+            />
           </td>
           <td>
             <ng-container *ngIf="editingEmployee?.id !== emp.id">
               {{ emp.email }}
             </ng-container>
-            <input *ngIf="editingEmployee?.id === emp.id" [(ngModel)]="editingEmployee.email" class="edit-input">
+            <input
+              *ngIf="editingEmployee?.id === emp.id"
+              [(ngModel)]="editingEmployee.email"
+              class="edit-input"
+            />
           </td>
           <td>
             <ng-container *ngIf="editingEmployee?.id !== emp.id">
               {{ emp.phone_number }}
             </ng-container>
-            <input *ngIf="editingEmployee?.id === emp.id" [(ngModel)]="editingEmployee.phone_number" class="edit-input">
+            <input
+              *ngIf="editingEmployee?.id === emp.id"
+              [(ngModel)]="editingEmployee.phone_number"
+              class="edit-input"
+            />
           </td>
           <td>
             <ng-container *ngIf="editingEmployee?.id !== emp.id">
               <span class="designation-cell">{{ emp.designation }}</span>
             </ng-container>
-            <input *ngIf="editingEmployee?.id === emp.id" [(ngModel)]="editingEmployee.designation" class="edit-input">
+            <input
+              *ngIf="editingEmployee?.id === emp.id"
+              [(ngModel)]="editingEmployee.designation"
+              class="edit-input"
+            />
           </td>
-          <td class="actions-cell">
+          <td class="actions-cell" *ngIf="canEdit">
             <div class="action-buttons" *ngIf="editingEmployee?.id !== emp.id">
-              <button class="btn-icon edit" (click)="editEmployee(emp)" title="Edit">
-                <i class="lucide-pencil"></i>
+              <button
+                class="btn-icon edit"
+                (click)="editEmployee(emp)"
+                title="Edit"
+              >
+                <i data-lucide="pencil"></i>
               </button>
-              <button class="btn-icon delete" (click)="deleteEmployee(emp.id)" title="Delete">
-                <i class="lucide-trash-2"></i>
+              <button
+                class="btn-icon delete"
+                (click)="deleteEmployee(emp.id)"
+                title="Delete"
+              >
+                <i data-lucide="trash-2"></i>
               </button>
             </div>
             <div class="action-buttons" *ngIf="editingEmployee?.id === emp.id">
-              <button class="btn-icon save" (click)="saveEmployee()" title="Save">
-                <i class="lucide-check"></i>
+              <button
+                class="btn-icon save"
+                (click)="saveEmployee()"
+                title="Save"
+              >
+                <i data-lucide="check-circle"></i>
               </button>
-              <button class="btn-icon cancel" (click)="cancelEdit()" title="Cancel">
-                <i class="lucide-x"></i>
+              <button
+                class="btn-icon cancel"
+                (click)="cancelEdit()"
+                title="Cancel"
+              >
+                <i data-lucide="x-circle"></i>
               </button>
             </div>
           </td>

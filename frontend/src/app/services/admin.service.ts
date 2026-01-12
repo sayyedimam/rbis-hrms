@@ -21,4 +21,14 @@ export class AdminService {
   deleteEmployee(id: number): Observable<any> {
     return this.http.delete(`${this.apiUrl}/employees/${id}`);
   }
+
+  downloadTemplate(): Observable<Blob> {
+    return this.http.get(`${this.apiUrl}/employees/template`, { responseType: 'blob' });
+  }
+
+  uploadEmployeeMaster(file: File): Observable<any> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post(`${this.apiUrl}/employees/upload`, formData);
+  }
 }

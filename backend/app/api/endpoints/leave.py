@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import date, datetime, timedelta
 from app.core.database import get_db
-from app.api.deps import get_current_user, check_hr, check_ceo
+from app.api.deps import get_current_user, check_hr, check_ceo, check_admin
 from app.models.models import (
     Employee, LeaveType, LeaveBalance, LeaveRequest, 
     LeaveApprovalLog, Attendance, UserRole
@@ -150,8 +150,10 @@ async def apply_leave(data: LeaveApplyRequest, db: Session = Depends(get_db), us
 
     if (balance.allocated - balance.used) < work_days:
         ltype = db.query(LeaveType).get(data.leave_type_id)
-        if ltype and ltype.is_paid:
-            raise HTTPException(status_code=400, detail="Insufficient leave balance")
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Insufficient balance. Requested: {work_days}, Available: {balance.allocated - balance.used} ({ltype.name if ltype else 'Unknown'})"
+        )
 
     # 4. Save Request
     is_super = user.role == UserRole.SUPER_ADMIN
@@ -242,7 +244,7 @@ async def approve_by_ceo(data: ApprovalAction, db: Session = Depends(get_db), ce
 # --- Admin/CEO Explorer ---
 
 @router.get("/admin/employee-summary/{emp_id}", tags=["Admin/CEO"])
-async def get_employee_leave_summary(emp_id: str, db: Session = Depends(get_db), admin: Employee = Depends(check_ceo)):
+async def get_employee_leave_summary(emp_id: str, db: Session = Depends(get_db), admin: Employee = Depends(check_admin)):
     # 1. Verify employee exists
     emp = db.query(Employee).filter(Employee.emp_id == emp_id).first()
     if not emp:

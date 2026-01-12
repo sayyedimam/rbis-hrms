@@ -37,6 +37,10 @@ export class LeaveManagementComponent implements OnInit {
   isHr = false;
   isCeo = false;
 
+  // UI State
+  expandedRequestId: number | null = null;
+  expandedExplorerId: number | null = null;
+
   constructor(
     private leaveService: LeaveService,
     private authService: AuthService,
@@ -108,6 +112,16 @@ export class LeaveManagementComponent implements OnInit {
 
   switchTab(tab: any): void {
     this.activeTab = tab;
+    this.expandedRequestId = null;
+    this.expandedExplorerId = null;
+  }
+
+  toggleRow(id: number): void {
+    this.expandedRequestId = this.expandedRequestId === id ? null : id;
+  }
+
+  toggleExplorerRow(id: number): void {
+    this.expandedExplorerId = this.expandedExplorerId === id ? null : id;
   }
 
   getLeaveTypeName(id: number): string {

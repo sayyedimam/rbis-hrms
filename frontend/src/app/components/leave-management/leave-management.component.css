@@ -477,3 +477,77 @@
 @keyframes rotate {
   to { transform: rotate(360deg); }
 }
+
+/* Expandable Rows */
+.clickable-row {
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.clickable-row:hover {
+  background-color: #f1f5f9;
+}
+
+.clickable-row.expanded {
+  background-color: #eef2ff;
+  border-left: 3px solid #6366f1;
+}
+
+.details-row td {
+  background-color: #f8fafc;
+  padding: 0;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.details-content {
+  padding: 20px;
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.detail-block {
+  margin-bottom: 15px;
+}
+
+.detail-block:last-child {
+  margin-bottom: 0;
+}
+
+.detail-label {
+  display: block;
+  font-size: 11px;
+  text-transform: uppercase;
+  color: #64748b;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
+}
+
+.detail-text {
+  font-size: 14px;
+  color: #334155;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.detail-text.remark {
+  font-style: italic;
+  color: #475569;
+  background: white;
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+  display: inline-block;
+}
+
+.remarks-grid {
+  display: flex;
+  gap: 30px;
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px dashed #cbd5e1;
+}

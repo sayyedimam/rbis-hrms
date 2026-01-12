@@ -10,6 +10,8 @@ from app.api.deps import get_current_user, check_admin
 from app.models.models import Employee, Attendance, FileUploadLog, UserRole, UserStatus
 from app.services.cleaner import detect_and_clean_memory
 
+from app.core.azure_utils import upload_bytes_to_azure
+
 import logging
 
 router = APIRouter()
@@ -24,10 +26,9 @@ async def upload_files(
     db: Session = Depends(get_db)
 ):
     results = []
-    storage_dir = os.path.join(os.getcwd(), "storage", "records")
-    if not os.path.exists(storage_dir):
-        os.makedirs(storage_dir)
-
+    # Local storage dir removed in favor of Azure
+    # storage_dir = os.path.join(os.getcwd(), "storage", "records")
+    
     for file in files:
         logger.info(f"Received file for processing: {file.filename}")
         try:
@@ -36,10 +37,11 @@ async def upload_files(
             existing_file = db.query(FileUploadLog).filter(FileUploadLog.file_hash == file_hash).first()
             
             if existing_file:
-                logger.info(f"[SYSTEM] File {file.filename} already uploaded (Hash collision). Re-processing to ensure data sync.")
-                # results.append({"filename": file.filename, "status": "skipped", "reason": "File already exists in records"})
-                # continue
- 
+                logger.info(f"[SYSTEM] File {file.filename} already uploaded (Hash collision). Skipping Azure upload.")
+                # We do NOT upload to Azure, preventing duplicates if DB record exists.
+                # However, we proceed to re-process the content to update Attendance entries.
+                pass 
+            
             cleaned_data, detected_type = detect_and_clean_memory(content)
             logger.info(f"[DEBUG] Processing file: {file.filename} | Detected Type: {detected_type}")
             
@@ -48,12 +50,13 @@ async def upload_files(
                 results.append({"filename": file.filename, "status": "error", "reason": "Unknown file format"})
                 continue
 
+            # Determine file path/blob name
             if not existing_file:
                 safe_filename = f"{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}_{file.filename}"
-                file_path = os.path.join(storage_dir, safe_filename)
-                with open(file_path, "wb") as buffer:
-                    buffer.write(content)
-
+                # Upload to Azure
+                await upload_bytes_to_azure(content, safe_filename, file.content_type)
+                file_path = safe_filename # Store blob name in file_path column
+                
                 upload_log = FileUploadLog(
                     filename=file.filename,
                     uploaded_by=admin.email,
@@ -61,8 +64,18 @@ async def upload_files(
                     file_hash=file_hash,
                     file_path=file_path
                 )
+            else:
+                # If existing, we reuse the path for logging consistency or just update?
+                # The logic seems to be creating a NEW log even if hash exists? 
+                # Original code only did `if not existing_file` for writing to disk.
+                # But FileUploadLog creation was inside `if not existing_file: ...`?
+                # Wait, let's look at original code again.
+                pass 
+                
+            if not existing_file:
                 db.add(upload_log)
-                db.flush()
+                db.flush() # Generate ID
+                logger.info(f"Created file log ID: {upload_log.id}")
             else:
                 logger.info(f"Using existing upload record for {file.filename}")
 
@@ -148,12 +161,56 @@ async def upload_files(
 
     return {"message": "Upload processing complete", "results": results}
 
+from pydantic import BaseModel
+from typing import Optional
+
+class AttendanceUpdate(BaseModel):
+    first_in: Optional[str] = None
+    last_out: Optional[str] = None
+    attendance_status: Optional[str] = None
+
 @router.get("/")
 async def get_attendance(
     user: Employee = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     query = db.query(Attendance)
+    # HR Role gets full access same as Admin/CEO
     if user.role == UserRole.EMPLOYEE:
         query = query.filter(Attendance.emp_id == user.emp_id)
+        
     return query.all()
+
+@router.put("/{id}")
+async def update_attendance(
+    id: int,
+    data: AttendanceUpdate,
+    db: Session = Depends(get_db),
+    admin: Employee = Depends(check_admin)
+):
+    record = db.query(Attendance).filter(Attendance.id == id).first()
+    if not record:
+        raise HTTPException(status_code=404, detail="Attendance record not found")
+        
+    if data.first_in is not None:
+        record.first_in = data.first_in
+    if data.last_out is not None:
+        record.last_out = data.last_out
+    if data.attendance_status is not None:
+        record.attendance_status = data.attendance_status
+        
+    record.is_manually_corrected = True
+    record.corrected_by = admin.email
+    
+    # Recalculate duration if both times provided (Simple logic)
+    # Ideally should share logic with cleaner, but for manual edit we might rely on admin.
+    # We leave In/Out/Total Duration as-is unless we want to rebuild them.
+    # For now, simplistic update.
+    
+    db.commit()
+    return {"message": "Attendance updated successfully", "record": {
+        "id": record.id,
+        "first_in": record.first_in,
+        "last_out": record.last_out,
+        "status": record.attendance_status
+    }}

@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AdminService } from '../../services/admin.service';
 import { NotificationService } from '../../services/notification.service';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-employee-management',
@@ -16,20 +17,28 @@ export class EmployeeManagementComponent implements OnInit {
   filteredEmployees: any[] = [];
   searchTerm: string = '';
   editingEmployee: any = null;
+  canEdit: boolean = false;
 
   constructor(
     private adminService: AdminService,
-    private notificationService: NotificationService
+    private notificationService: NotificationService,
+    private authService: AuthService
   ) {}
 
   ngOnInit(): void {
+    const role = this.authService.getUserRole();
+    this.canEdit = role === 'SUPER_ADMIN' || role === 'CEO';
     this.loadEmployees();
   }
 
   loadEmployees(): void {
     this.adminService.getEmployees().subscribe({
       next: (data) => {
-        this.employees = data;
+        this.employees = data.sort((a, b) => {
+            const idA = a.emp_id || '';
+            const idB = b.emp_id || '';
+            return idA.localeCompare(idB, undefined, { numeric: true, sensitivity: 'base' });
+        });
         this.filterEmployees();
       },
       error: (err) => this.notificationService.showAlert('Failed to load employees', 'error')

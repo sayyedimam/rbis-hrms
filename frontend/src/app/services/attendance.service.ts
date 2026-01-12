@@ -55,6 +55,10 @@ export class AttendanceService {
     return this.http.post(`${this.apiUrl}/onboarding/onboard`, employeeData);
   }
 
+  updateAttendance(id: number, data: any): Observable<any> {
+    return this.http.put(`${this.apiUrl}/attendance/${id}`, data);
+  }
+
   fetchAttendance(): void {
     this.http.get<any[]>(`${this.apiUrl}/attendance/`).subscribe({
       next: (data) => {
@@ -65,6 +69,7 @@ export class AttendanceService {
         
         // Map backend fields to frontend expected fields (Shared for both)
         const mappedA = typeA.map(d => ({
+          id: d.id,
           Date: d.date,
           EmpID: d.emp_id,
           In_Duration: d.in_duration,
@@ -77,6 +82,7 @@ export class AttendanceService {
         }));
 
         const mappedB = typeB.map(d => ({
+          id: d.id,
           Date: d.date,
           EmpID: d.emp_id,
           In_Duration: d.in_duration,

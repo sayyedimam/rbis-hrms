@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AttendanceService } from '../../services/attendance.service';
+import { AdminService } from '../../services/admin.service';
 import { NotificationService } from '../../services/notification.service';
 import { AuthService } from '../../services/auth.service';
 import { RouterModule } from '@angular/router';
@@ -26,14 +27,18 @@ export class OnboardingComponent implements OnInit {
 
   loading = false;
   uploadingMaster = false;
+  canSync = false;
 
   constructor(
     private attendanceService: AttendanceService,
+    private adminService: AdminService,
     private notificationService: NotificationService,
     public authService: AuthService
   ) {}
 
   ngOnInit() {
+    const role = this.authService.getUserRole();
+    this.canSync = role === 'SUPER_ADMIN' || role === 'CEO';
     this.suggestNextId();
   }
 
@@ -76,21 +81,37 @@ export class OnboardingComponent implements OnInit {
       }
     });
   }
+  
+  downloadTemplate() {
+    this.adminService.downloadTemplate().subscribe({
+        next: (blob) => {
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'Employee_Master_Template.xlsx';
+            link.click();
+            window.URL.revokeObjectURL(url);
+        },
+        error: () => this.notificationService.showAlert('Failed to download template', 'error')
+    });
+  }
 
   onEmployeeMasterSelected(event: any) {
     const file: File = event.target.files[0];
     if (file) {
       this.uploadingMaster = true;
-      this.attendanceService.uploadFiles([file]).subscribe({
+      this.adminService.uploadEmployeeMaster(file).subscribe({
         next: (res: any) => {
           this.uploadingMaster = false;
           this.notificationService.showAlert(res.message, 'success');
           this.suggestNextId();
+          event.target.value = '';
         },
         error: (err: any) => {
           this.uploadingMaster = false;
           const errorMsg = err.error?.detail || 'Error uploading employee master.';
           this.notificationService.showAlert(errorMsg, 'error');
+          event.target.value = '';
         }
       });
     }
