@@ -250,6 +250,12 @@
   color: #dc2626;
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px; /* Space between buttons */
+}
+
 .btn-export {
   background: #fdfdff;
   color: rgb(80, 79, 79);

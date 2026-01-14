@@ -3,18 +3,22 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  background: transparent; /* Show particle canvas */
   padding: 20px;
+  position: relative;
+  overflow: hidden;
 }
 
 .auth-card {
-  background: white;
-  border: 1px solid #e2e8f0;
-  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 24px;
   width: 100%;
   max-width: 440px;
   padding: 40px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.05);
+  z-index: 1;
 }
 
 .auth-header {

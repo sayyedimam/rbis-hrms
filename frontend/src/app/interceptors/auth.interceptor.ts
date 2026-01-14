@@ -23,9 +23,27 @@ export class AuthInterceptor implements HttpInterceptor {
       catchError((error: HttpErrorResponse) => {
         if (error.status === 401) {
           // Session expired or unauthorized
+          console.log('Session expired. Redirecting to login...');
+          
+          // Clear user data
           localStorage.removeItem('currentUser');
+          
+          // Show alert to user
+          alert('Your session has expired. Please login again.');
+          
+          // Redirect to login
           this.router.navigate(['/login']);
         }
+        
+        // Handle other errors
+        if (error.status === 403) {
+          console.error('Access forbidden:', error.message);
+        }
+        
+        if (error.status === 500) {
+          console.error('Server error:', error.message);
+        }
+        
         return throwError(() => error);
       })
     );

@@ -1,12 +1,17 @@
+"""
+Main API Router
+Supports both v1 and legacy endpoints for smooth transition
+"""
 from fastapi import APIRouter
-from app.api.endpoints import auth, attendance, onboarding, records, profile, admin, leave
+from app.api.v1 import router as v1_router
 
 api_router = APIRouter()
 
-api_router.include_router(auth.router, prefix="/auth", tags=["Authentication"])
-api_router.include_router(attendance.router, prefix="/attendance", tags=["Attendance"])
-api_router.include_router(onboarding.router, prefix="/onboarding", tags=["Onboarding"])
-api_router.include_router(records.router, prefix="/records", tags=["Records"])
-api_router.include_router(profile.router, prefix="/profile", tags=["Profile"])
-api_router.include_router(admin.router, prefix="/admin", tags=["Admin"])
-api_router.include_router(leave.router, prefix="/leave", tags=["Leave"])
+# V1 API (Refactored - Clean Architecture)
+# Recommended: Use /api/v1/* endpoints
+api_router.include_router(v1_router.api_router, prefix="/api/v1")
+
+# Legacy API (Backward Compatibility)
+# Old endpoints (/auth/*, /attendance/*, etc.) redirect to v1
+# This allows frontend to work without immediate changes
+api_router.include_router(v1_router.api_router)  # Mount v1 routes at root level too
