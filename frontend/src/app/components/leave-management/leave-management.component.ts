@@ -53,6 +53,9 @@ export class LeaveManagementComponent implements OnInit {
     this.isCeo = role === 'CEO' || role === 'SUPER_ADMIN';
     
     this.loadInitialData();
+    if (this.isHr || this.isCeo) {
+      this.loadGeneralExplorer();
+    }
   }
 
   loadInitialData(): void {
@@ -85,7 +88,8 @@ export class LeaveManagementComponent implements OnInit {
 
   // --- Explorer ---
   searchEmployee(): void {
-    if (!this.explorerSearchTerm.trim()) {
+    const term = this.explorerSearchTerm.trim();
+    if (!term) {
       this.notificationService.showAlert('Please enter an Employee ID', 'info');
       return;
     }
@@ -93,13 +97,29 @@ export class LeaveManagementComponent implements OnInit {
     this.searchLoading = true;
     this.explorerData = null;
 
-    this.leaveService.getEmployeeSummary(this.explorerSearchTerm).subscribe({
+    this.leaveService.getEmployeeSummary(term).subscribe({
       next: (data) => {
         this.explorerData = data;
         this.searchLoading = false;
       },
       error: (err) => {
-        this.notificationService.showAlert(err.error?.detail || 'Employee not found', 'error');
+        const msg = err.error?.detail || err.message || 'Employee not found';
+        this.notificationService.showAlert(msg, 'error');
+        this.searchLoading = false;
+      }
+    });
+  }
+
+  loadGeneralExplorer(): void {
+    if (this.explorerData && this.explorerSearchTerm) return; // Don't override active search
+    
+    this.searchLoading = true;
+    this.leaveService.getGeneralSummary().subscribe({
+      next: (data) => {
+        this.explorerData = data;
+        this.searchLoading = false;
+      },
+      error: (err) => {
         this.searchLoading = false;
       }
     });
@@ -107,13 +127,16 @@ export class LeaveManagementComponent implements OnInit {
 
   clearExplorer(): void {
     this.explorerSearchTerm = '';
-    this.explorerData = null;
+    this.loadGeneralExplorer();
   }
 
   switchTab(tab: any): void {
     this.activeTab = tab;
     this.expandedRequestId = null;
     this.expandedExplorerId = null;
+    if (tab === 'explorer') {
+      this.loadGeneralExplorer();
+    }
   }
 
   toggleRow(id: number): void {
@@ -129,8 +152,8 @@ export class LeaveManagementComponent implements OnInit {
   }
 
   applyLeave(): void {
-    if (!this.newRequest.leave_type_id || !this.newRequest.start_date || !this.newRequest.end_date) {
-      this.notificationService.showAlert('Please fill all required fields', 'error');
+    if (!this.newRequest.leave_type_id || !this.newRequest.start_date || !this.newRequest.end_date || !this.newRequest.reason?.trim()) {
+      this.notificationService.showAlert('All fields including reason are mandatory', 'error');
       return;
     }
     
@@ -145,40 +168,53 @@ export class LeaveManagementComponent implements OnInit {
     });
   }
 
-  approve(req: any, remarks: string = ''): void {
-    const isSuper = this.authService.getUserRole() === 'SUPER_ADMIN';
+  approve(req: any, remarks: string): void {
+    if (!remarks?.trim()) {
+      this.notificationService.showAlert('Approval remarks are mandatory', 'error');
+      return;
+    }
     
-    if (req.status === 'PENDING' && (this.isHr || isSuper)) {
-      this.leaveService.approveHr({ request_id: req.id, action: 'APPROVE', remarks }).subscribe({
-        next: () => {
-          this.notificationService.showAlert(isSuper ? 'Advanced to CEO level' : 'Approved by HR', 'success');
-          this.loadInitialData();
-        },
-        error: (err) => this.notificationService.showAlert('Action failed', 'error')
-      });
-    } else if (req.status === 'APPROVED_BY_HR' && (this.isCeo || isSuper)) {
+    if (this.isCeo && req.status === 'APPROVED_BY_HR') {
       this.leaveService.approveCeo({ request_id: req.id, action: 'APPROVE', remarks }).subscribe({
         next: () => {
-          this.notificationService.showAlert('Final Approval Granted', 'success');
+          this.notificationService.showAlert('Leave approved by CEO', 'success');
           this.loadInitialData();
         },
-        error: (err) => this.notificationService.showAlert('Action failed', 'error')
+        error: () => this.notificationService.showAlert('Approval failed', 'error')
+      });
+    } else if (this.isHr && req.status === 'PENDING') {
+      this.leaveService.approveHr({ request_id: req.id, action: 'APPROVE', remarks }).subscribe({
+        next: () => {
+          this.notificationService.showAlert('Leave approved by HR', 'success');
+          this.loadInitialData();
+        },
+        error: () => this.notificationService.showAlert('Approval failed', 'error')
       });
     }
   }
 
-  reject(req: any, remarks: string = ''): void {
-    const isSuper = this.authService.getUserRole() === 'SUPER_ADMIN';
-    const action = (req.status === 'PENDING' && (this.isHr || isSuper)) 
-      ? this.leaveService.approveHr.bind(this.leaveService) 
-      : this.leaveService.approveCeo.bind(this.leaveService);
+  reject(req: any, remarks: string): void {
+    if (!remarks?.trim()) {
+      this.notificationService.showAlert('Rejection remarks are mandatory', 'error');
+      return;
+    }
     
-    action({ request_id: req.id, action: 'REJECT', remarks }).subscribe({
-      next: () => {
-        this.notificationService.showAlert(isSuper ? 'Rejected by Super Admin' : 'Request rejected', 'info');
-        this.loadInitialData();
-      },
-      error: (err) => this.notificationService.showAlert('Action failed', 'error')
-    });
+    if (this.isCeo && req.status === 'APPROVED_BY_HR') {
+      this.leaveService.approveCeo({ request_id: req.id, action: 'REJECT', remarks }).subscribe({
+        next: () => {
+          this.notificationService.showAlert('Leave request rejected by CEO', 'success');
+          this.loadInitialData();
+        },
+        error: () => this.notificationService.showAlert('Rejection failed', 'error')
+      });
+    } else if (this.isHr && req.status === 'PENDING') {
+      this.leaveService.approveHr({ request_id: req.id, action: 'REJECT', remarks }).subscribe({
+        next: () => {
+          this.notificationService.showAlert('Leave request rejected by HR', 'success');
+          this.loadInitialData();
+        },
+        error: () => this.notificationService.showAlert('Rejection failed', 'error')
+      });
+    }
   }
 }

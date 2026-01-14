@@ -244,3 +244,25 @@ class AttendanceService:
         self.attendance_repo.commit()
         
         return {"message": "Attendance record updated successfully"}
+
+    def delete_attendance_record(self, attendance_id: int) -> Dict:
+        """
+        Delete attendance record
+        
+        Args:
+            attendance_id: Attendance record ID
+            
+        Returns:
+            Success message
+            
+        Raises:
+            HTTPException: If record not found
+        """
+        record = self.attendance_repo.get_by_id(attendance_id)
+        if not record:
+            raise HTTPException(status_code=404, detail="Attendance record not found")
+        
+        self.attendance_repo.delete(record)
+        self.attendance_repo.commit()
+        
+        return {"message": "Attendance record deleted successfully"}

@@ -9,6 +9,7 @@ from typing import List, Dict
 
 from app.repositories.leave_repository import LeaveRepository
 from app.repositories.attendance_repository import AttendanceRepository
+from app.repositories.employee_repository import EmployeeRepository
 from app.models.models import Employee, UserRole
 
 class LeaveService:
@@ -18,6 +19,7 @@ class LeaveService:
         self.db = db
         self.leave_repo = LeaveRepository(db)
         self.attendance_repo = AttendanceRepository(db)
+        self.employee_repo = EmployeeRepository(db)
     
     def create_leave_type(self, type_data: dict) -> Dict:
         """
@@ -306,3 +308,51 @@ class LeaveService:
                     self.attendance_repo.create(attendance_data)
             
             curr += timedelta(days=1)
+
+    def get_employee_summary(self, emp_id: str = None) -> Dict:
+        """
+        Get comprehensive leave summary for admin/HR
+        
+        Args:
+            emp_id: Optional Employee ID. If None, returns top 5 recent requests.
+            
+        Returns:
+            Dictionary with balances and request history
+        """
+        year = datetime.now().year
+        
+        if emp_id:
+            employee = self.employee_repo.get_by_emp_id(emp_id)
+            if not employee:
+                raise HTTPException(status_code=404, detail=f"Employee with ID {emp_id} not found")
+                
+            balances = self.get_employee_balances(emp_id, year)
+            requests = self.get_my_requests(emp_id)
+            
+            # Map employee to plain dict to avoid circular reference recursion
+            employee_data = {
+                "id": employee.id,
+                "emp_id": employee.emp_id,
+                "full_name": employee.full_name,
+                "email": employee.email,
+                "designation": employee.designation,
+                "role": employee.role,
+                "status": employee.status
+            }
+            
+            return {
+                "emp_id": emp_id,
+                "employee": employee_data,
+                "year": year,
+                "balances": balances,
+                "history": requests
+            }
+        else:
+            # Default "Explorer" mode - show top 5 recent requests from anyone
+            recent_requests = self.leave_repo.get_all_requests(limit=5)
+            return {
+                "emp_id": "ALL",
+                "year": year,
+                "history": recent_requests,
+                "balances": [] # No specific balances in "All" view
+            }

@@ -122,3 +122,22 @@
   font-size: 3rem;
   margin-bottom: 1rem;
 }
+@media (max-width: 768px) {
+  .records-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .card-footer {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+  }
+
+  .uploader-info {
+    max-width: 100%;
+  }
+
+  .circle-download {
+    align-self: flex-end;
+  }
+}

@@ -252,3 +252,40 @@
 @keyframes spin {
     to { transform: rotate(360deg); }
 }
+@media (max-width: 768px) {
+  .onboarding-header-section {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1.5rem;
+  }
+
+  .header-actions {
+    align-items: stretch;
+  }
+
+  .onboarding-content {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .form-group.full-width {
+    grid-column: span 1;
+  }
+
+  .form-actions {
+    flex-direction: column-reverse;
+  }
+
+  .btn-save, .btn-cancel {
+    width: 100%;
+  }
+
+  .sidebar-column {
+    order: -1;
+  }
+}

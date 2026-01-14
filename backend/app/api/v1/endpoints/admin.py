@@ -2,7 +2,7 @@
 Admin Endpoints (API v1)
 Handles employee management operations
 """
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import Optional
@@ -67,3 +67,28 @@ async def delete_employee(
     """
     service = AdminService(db)
     return service.delete_employee(id, admin)
+
+@router.get("/employees/template")
+async def download_master_template(
+    admin: Employee = Depends(check_admin),
+    db: Session = Depends(get_db)
+):
+    """Download employee master Excel template"""
+    from fastapi.responses import Response
+    service = AdminService(db)
+    template_bytes = service.generate_master_template()
+    return Response(
+        content=template_bytes,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": "attachment; filename=Employee_Master_Template.xlsx"}
+    )
+
+@router.post("/employees/upload")
+async def upload_master(
+    file: UploadFile = File(...),
+    admin: Employee = Depends(check_admin),
+    db: Session = Depends(get_db)
+):
+    """Upload completed employee master Excel"""
+    service = AdminService(db)
+    return await service.process_employee_master(file, admin)

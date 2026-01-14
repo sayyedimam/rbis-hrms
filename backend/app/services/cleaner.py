@@ -59,11 +59,9 @@ def detect_and_clean_memory(file_content):
                             if not emp_id_raw or emp_id_raw.lower() == 'nan':
                                 continue
 
-                            # Absence check
-                            is_absent = in_dur.lower() in ['00:00', '0:00', '', 'nan', 'none', 'nil', '-']
-                            
                             # Parse First In / Last Out from Punches
                             first_in, last_out = "--:--", "--:--"
+                            punch_count = 0
                             if punch_log and punch_log.lower() != 'nan':
                                 # Strip tags like (in) or (out)
                                 clean_punches = re.sub(r'\(in\)|\(out\)', '', punch_log, flags=re.IGNORECASE)
@@ -71,6 +69,7 @@ def detect_and_clean_memory(file_content):
                                 if times:
                                     first_in = times[0]
                                     last_out = times[-1]
+                                    punch_count = len(times)
 
                             # Fallback if punches are empty but durations look like times
                             if first_in == "--:--" and ":" in in_dur: first_in = in_dur
@@ -102,6 +101,10 @@ def detect_and_clean_memory(file_content):
                             if not current_attendance_date:
                                 continue
 
+                            # Status logic: Present only if they have at least 4 punches (e.g., In-Out-In-Out)
+                            is_absent = in_dur.lower() in ['00:00', '0:00', '', 'nan', 'none', 'nil', '-']
+                            is_present = not is_absent and punch_count >= 4
+
                             cleaned_data.append({
                                 'Date': current_attendance_date,
                                 'EmpID': emp_id_raw,
@@ -112,7 +115,7 @@ def detect_and_clean_memory(file_content):
                                 'First_In': first_in,
                                 'Last_Out': last_out,
                                 'Punch_Records': punch_log,
-                                'Attendance': 'Absent' if is_absent else 'Present'
+                                'Attendance': 'Present' if is_present else 'Absent'
                             })
                     except: continue
 

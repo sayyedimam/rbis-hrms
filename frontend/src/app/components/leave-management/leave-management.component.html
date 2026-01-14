@@ -90,10 +90,11 @@
         </div>
       </div>
       <div class="form-group">
-        <label>Reason</label>
+        <label>Reason <span class="required">*</span></label>
         <textarea
           [(ngModel)]="newRequest.reason"
-          placeholder="Briefly explain your reason..."
+          placeholder="Briefly explain your reason (mandatory)..."
+          required
         ></textarea>
       </div>
       <button class="btn-submit" (click)="applyLeave()">
@@ -261,18 +262,28 @@
       </div>
 
       <div *ngIf="explorerData" class="explorer-results">
-        <div class="emp-summary">
-          <div class="emp-info">
-            <h3>{{ explorerData.employee.full_name }}</h3>
-            <span class="badge-id">{{ explorerData.employee.emp_id }}</span>
-            <span class="designation">{{
-              explorerData.employee.designation
+        <div class="emp-summary" *ngIf="!searchLoading">
+          <div class="emp-info" *ngIf="explorerData.emp_id !== 'ALL'">
+            <h3>
+              {{ explorerData.employee?.full_name || explorerData.emp_id }}
+            </h3>
+            <span class="badge-id">{{
+              explorerData.employee?.emp_id || explorerData.emp_id
             }}</span>
+            <span class="designation">{{
+              explorerData.employee?.designation || "Employee"
+            }}</span>
+          </div>
+          <div class="emp-info" *ngIf="explorerData.emp_id === 'ALL'">
+            <h3>Recent Company-wide Requests</h3>
+            <span class="badge-id">Global Explorer</span>
           </div>
         </div>
 
-        <div class="section-divider">Leave Balances</div>
-        <div class="balance-grid mini">
+        <div class="section-divider" *ngIf="explorerData.emp_id !== 'ALL'">
+          Leave Balances
+        </div>
+        <div class="balance-grid mini" *ngIf="explorerData.emp_id !== 'ALL'">
           <div class="balance-card" *ngFor="let bal of explorerData.balances">
             <div class="card-header">
               <h3>{{ getLeaveTypeName(bal.leave_type_id) }}</h3>
@@ -349,6 +360,12 @@
       <div *ngIf="!explorerData && !searchLoading" class="explorer-empty">
         <i class="lucide-search"></i>
         <p>Search for an employee ID to see their leave details.</p>
+      </div>
+
+      <!-- Loading Overlay inside card -->
+      <div class="loading-overlay" *ngIf="searchLoading">
+        <div class="spinner"></div>
+        <p>Fetching leave records...</p>
       </div>
     </div>
   </div>

@@ -20,10 +20,10 @@
       <thead>
         <tr>
           <th>Emp ID</th>
-          <th>Full Name</th>
-          <th>Email</th>
+          <th>Name</th>
+          <th class="mobile-hide">Email</th>
           <th>Phone</th>
-          <th>Designation</th>
+          <th class="mobile-hide">Designation</th>
           <th *ngIf="canEdit">Actions</th>
         </tr>
       </thead>
@@ -49,7 +49,7 @@
               class="edit-input"
             />
           </td>
-          <td>
+          <td class="mobile-hide">
             <ng-container *ngIf="editingEmployee?.id !== emp.id">
               {{ emp.email }}
             </ng-container>
@@ -69,7 +69,7 @@
               class="edit-input"
             />
           </td>
-          <td>
+          <td class="mobile-hide">
             <ng-container *ngIf="editingEmployee?.id !== emp.id">
               <span class="designation-cell">{{ emp.designation }}</span>
             </ng-container>

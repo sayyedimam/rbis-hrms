@@ -24,12 +24,24 @@ class EmployeeRepository:
         """
         return self.db.query(Employee).filter(Employee.email == email).first()
     
-    def get_by_id(self, emp_id: str) -> Optional[Employee]:
+    def get_by_db_id(self, id: int) -> Optional[Employee]:
         """
-        Get employee by employee ID
+        Get employee by database primary key ID
         
         Args:
-            emp_id: Employee ID (e.g., RBIS001)
+            id: Database ID (integer)
+            
+        Returns:
+            Employee object or None if not found
+        """
+        return self.db.query(Employee).get(id)
+
+    def get_by_emp_id(self, emp_id: str) -> Optional[Employee]:
+        """
+        Get employee by employee ID (e.g., RBIS001)
+        
+        Args:
+            emp_id: Employee ID
             
         Returns:
             Employee object or None if not found

@@ -33,6 +33,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
     editingRecord: any = null;
     isSaving = false;
 
+    // Drill Down State
+    showDrillDown = false;
+    drillDownTitle = '';
+    drillDownList: any[] = [];
+
     // Raw Data Storage
     private rawData: any[] = [];
     private filteredData: any[] = [];
@@ -44,6 +49,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
     // Selected Filters
     selectedDate: string = '';
     selectedEmp: string = '';
+    startDate: string = '';
+    endDate: string = '';
 
     // Intelligence State
     showTrendChart = true;
@@ -177,10 +184,14 @@ export class DashboardComponent implements OnInit, OnDestroy {
     }
 
     updateFilterOptions() {
-        const today = new Date().toISOString().split('T')[0];
+        const now = new Date();
+        const y = now.getFullYear();
+        const m = String(now.getMonth() + 1).padStart(2, '0');
+        const d = String(now.getDate()).padStart(2, '0');
+        const todayStr = `${y}-${m}-${d}`;
         
-        this.availableDates = [...new Set(this.rawData.map(d => String(d.Date)))]
-            .filter(d => d && d !== "null" && d <= today)
+        this.availableDates = [...new Set(this.rawData.map(d => String(d.Date).split('T')[0]))]
+            .filter(d => d && d !== "null" && d <= todayStr)
             .sort();
             
         this.availableEmps = [...new Set(this.rawData.map(d => String(d['EmpID'])))]
@@ -190,6 +201,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
     resetFilters() {
         this.selectedDate = '';
+        this.startDate = '';
+        this.endDate = '';
         if (this.isAdmin) {
             this.selectedEmp = '';
         } else {
@@ -200,12 +213,27 @@ export class DashboardComponent implements OnInit, OnDestroy {
     }
 
     applyFilters() {
-        const today = new Date().toISOString().split('T')[0];
-        let filtered = this.rawData.filter(d => String(d.Date) <= today);
+        const now = new Date();
+        const y = now.getFullYear();
+        const m = String(now.getMonth() + 1).padStart(2, '0');
+        const d = String(now.getDate()).padStart(2, '0');
+        const todayStr = `${y}-${m}-${d}`;
+
+        // Only show records up to today
+        let filtered = this.rawData.filter(d => {
+            const dateStr = String(d.Date).split('T')[0];
+            return dateStr <= todayStr;
+        });
         
         if (this.selectedDate) {
-            filtered = filtered.filter(d => String(d.Date) === this.selectedDate);
+            filtered = filtered.filter(d => String(d.Date).split('T')[0] === this.selectedDate);
+        } else if (this.startDate && this.endDate) {
+            filtered = filtered.filter(d => {
+                const dateStr = String(d.Date).split('T')[0];
+                return dateStr >= this.startDate && dateStr <= this.endDate;
+            });
         }
+        
         if (this.selectedEmp) {
             filtered = filtered.filter(d => String(d['EmpID']) === this.selectedEmp);
         }
@@ -341,6 +369,36 @@ export class DashboardComponent implements OnInit, OnDestroy {
                 borderWidth: 0
             }]
         };
+    }
+
+    viewStatusDetails(status: string) {
+        if (!this.canViewAll) return;
+        
+        // Match the date scope of the stat cards
+        let targetData = this.filteredData;
+        if (!this.selectedDate) {
+            // If "All Dates", the stats show the LATEST date only
+            const dates = [...new Set(this.filteredData.map(d => String(d.Date).split('T')[0]))].sort();
+            const latestDate = dates[dates.length - 1];
+            targetData = this.filteredData.filter(d => String(d.Date).split('T')[0] === latestDate);
+        }
+
+        this.drillDownTitle = `${status} List ${this.stats.label}`;
+        this.drillDownList = targetData
+            .filter(d => d.Attendance === status)
+            .map(d => ({
+                emp_id: d.EmpID,
+                firstIn: d.First_In || '--:--',
+                lastOut: d.Last_Out || '--:--',
+                duration: d.Total_Duration || '--:--',
+                hideTimings: status === 'Absent' || status === 'On Leave'
+            }));
+        this.showDrillDown = true;
+    }
+
+    closeDrillDown() {
+        this.showDrillDown = false;
+        this.drillDownList = [];
     }
 
     exportToCSV() {

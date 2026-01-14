@@ -47,7 +47,22 @@ class Employee(Base):
         "Attendance", 
         primaryjoin="Employee.emp_id == Attendance.emp_id",
         foreign_keys="Attendance.emp_id",
-        back_populates="owner"
+        back_populates="owner",
+        cascade="all, delete-orphan"
+    )
+
+    leave_balances = relationship(
+        "LeaveBalance",
+        primaryjoin="Employee.emp_id == LeaveBalance.emp_id",
+        foreign_keys="LeaveBalance.emp_id",
+        cascade="all, delete-orphan"
+    )
+
+    leave_requests = relationship(
+        "LeaveRequest",
+        primaryjoin="Employee.emp_id == LeaveRequest.emp_id",
+        foreign_keys="LeaveRequest.emp_id",
+        cascade="all, delete-orphan"
     )
 
 class Attendance(Base):
@@ -97,8 +112,8 @@ class LeaveType(Base):
 class LeaveBalance(Base):
     __tablename__ = "leave_balances"
     id = Column(Integer, primary_key=True, index=True)
-    emp_id = Column(String(50), ForeignKey("employees.emp_id"), index=True)
-    leave_type_id = Column(Integer, ForeignKey("leave_types.id"))
+    emp_id = Column(String(50), ForeignKey("employees.emp_id", ondelete="CASCADE"), index=True)
+    leave_type_id = Column(Integer, ForeignKey("leave_types.id", ondelete="CASCADE"))
     year = Column(Integer, index=True)
     allocated = Column(Integer)
     used = Column(Integer, default=0)
@@ -106,8 +121,8 @@ class LeaveBalance(Base):
 class LeaveRequest(Base):
     __tablename__ = "leave_requests"
     id = Column(Integer, primary_key=True, index=True)
-    emp_id = Column(String(50), ForeignKey("employees.emp_id"), index=True)
-    leave_type_id = Column(Integer, ForeignKey("leave_types.id"))
+    emp_id = Column(String(50), ForeignKey("employees.emp_id", ondelete="CASCADE"), index=True)
+    leave_type_id = Column(Integer, ForeignKey("leave_types.id", ondelete="CASCADE"))
     start_date = Column(Date, nullable=False)
     end_date = Column(Date, nullable=False)
     total_days = Column(Integer)
@@ -121,8 +136,8 @@ class LeaveRequest(Base):
 class LeaveApprovalLog(Base):
     __tablename__ = "leave_approval_logs"
     id = Column(Integer, primary_key=True, index=True)
-    request_id = Column(Integer, ForeignKey("leave_requests.id"))
-    approver_id = Column(String(50), ForeignKey("employees.emp_id"))
+    request_id = Column(Integer, ForeignKey("leave_requests.id", ondelete="CASCADE"))
+    approver_id = Column(String(50), ForeignKey("employees.emp_id", ondelete="CASCADE"))
     action = Column(String(20)) # HR_APPROVED, CEO_APPROVED, REJECTED
     remarks = Column(String(500), nullable=True)
     action_at = Column(DateTime, default=get_ist_now)

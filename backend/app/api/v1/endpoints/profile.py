@@ -20,6 +20,7 @@ class ProfileUpdate(BaseModel):
     designation: Optional[str] = None
 
 @router.get("/me")
+@router.get("")  # Alias for /profile/
 async def get_my_profile(
     user: Employee = Depends(get_current_user),
     db: Session = Depends(get_db)

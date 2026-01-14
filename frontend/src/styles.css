@@ -36,3 +36,24 @@ body {
 button .lucide, button [data-lucide] {
     margin: 0;
 }
+
+/* Responsive Utilities */
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+@media (max-width: 768px) {
+    html {
+        font-size: 14px;
+    }
+    
+    .mobile-hide {
+        display: none !important;
+    }
+    
+    .mobile-full {
+        width: 100% !important;
+    }
+}

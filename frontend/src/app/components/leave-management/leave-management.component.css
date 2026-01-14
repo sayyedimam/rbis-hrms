@@ -551,3 +551,60 @@
   padding-top: 15px;
   border-top: 1px dashed #cbd5e1;
 }
+@media (max-width: 768px) {
+  .leave-container {
+    padding: 15px;
+  }
+
+  .tab-nav {
+    overflow-x: auto;
+    white-space: nowrap;
+    padding-bottom: 5px;
+  }
+
+  .tab-nav button {
+    padding: 10px 15px;
+    font-size: 13px;
+  }
+
+  .balance-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .req-footer {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .action-input {
+    width: 100%;
+  }
+
+  .btns {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .btns button {
+    flex: 1;
+  }
+
+  .search-bar {
+    flex-direction: column;
+  }
+
+  .btn-search {
+    padding: 12px;
+    justify-content: center;
+  }
+
+  .remarks-grid {
+    flex-direction: column;
+    gap: 15px;
+  }
+}

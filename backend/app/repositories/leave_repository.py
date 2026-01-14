@@ -69,6 +69,12 @@ class LeaveRepository:
         return self.db.query(LeaveRequest).filter(
             LeaveRequest.emp_id == emp_id
         ).order_by(LeaveRequest.created_at.desc()).all()
+
+    def get_all_requests(self, limit: int = 50) -> List[LeaveRequest]:
+        """Get all leave requests across system, ordered by date"""
+        return self.db.query(LeaveRequest).order_by(
+            LeaveRequest.created_at.desc()
+        ).limit(limit).all()
     
     def get_overlapping_requests(
         self,

@@ -6,7 +6,7 @@ import { Observable } from 'rxjs';
   providedIn: 'root'
 })
 export class LeaveService {
-  private apiUrl = 'http://localhost:8000/leave';
+  private apiUrl = 'http://192.168.1.106:8000/leave';
 
   constructor(private http: HttpClient) { }
 
@@ -44,5 +44,9 @@ export class LeaveService {
 
   getEmployeeSummary(empId: string): Observable<any> {
     return this.http.get<any>(`${this.apiUrl}/admin/employee-summary/${empId}`);
+  }
+
+  getGeneralSummary(): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/admin/summary`);
   }
 }

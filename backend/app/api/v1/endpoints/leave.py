@@ -6,11 +6,13 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import Optional
-from datetime import date
+from datetime import date, datetime
+from typing import Optional, Dict, List
 
 from app.api.dependencies import get_db, get_current_user, check_hr, check_ceo
 from app.services.leave_service import LeaveService
 from app.models.models import Employee
+from app.utils.file_utils import normalize_emp_id
 
 router = APIRouter()
 
@@ -182,3 +184,33 @@ async def approve_by_ceo(
     """
     service = LeaveService(db)
     return service.approve_by_ceo(data.request_id, ceo, data.action, data.remarks)
+
+# --- Admin/HR Specific Endpoints ---
+
+@router.get("/admin/summary", tags=["Admin/HR"])
+async def get_general_leave_summary(
+    admin: Employee = Depends(check_hr),
+    db: Session = Depends(get_db)
+):
+    """
+    Get general leave summary (recent 5 requests)
+    - Used by Leave Explorer for initial view
+    """
+    service = LeaveService(db)
+    return service.get_employee_summary()
+
+@router.get("/admin/employee-summary/{emp_id}", tags=["Admin/HR"])
+async def get_employee_leave_summary(
+    emp_id: str,
+    admin: Employee = Depends(check_hr),
+    db: Session = Depends(get_db)
+):
+    """
+    Get comprehensive leave summary for an employee
+    
+    - Requires HR or Admin role
+    - Used by Leave Explorer
+    """
+    service = LeaveService(db)
+    normalized_id = normalize_emp_id(emp_id)
+    return service.get_employee_summary(normalized_id)

@@ -20,6 +20,7 @@ class OnboardingData(BaseModel):
     last_name: str
     phone_number: str
     designation: str
+    email: str
 
 @router.get("/next-id")
 async def get_next_employee_id(
@@ -74,9 +75,10 @@ async def get_pending_onboarding(
     return pending
 
 @router.post("/complete/{email}")
+@router.post("/onboard") # Alias for frontend call
 async def complete_onboarding(
-    email: str,
     data: OnboardingData,
+    email: str = None, # Make email optional if using /onboard with data
     hr: Employee = Depends(check_hr),
     db: Session = Depends(get_db)
 ):
@@ -88,10 +90,17 @@ async def complete_onboarding(
     - Requires HR role
     """
     repo = EmployeeRepository(db)
-    employee = repo.get_by_email(email)
+    
+    # If using /onboard, email might be in data? Let's check frontend.
+    # Frontend sends full employee object.
+    target_email = email or data.email
+    employee = repo.get_by_email(target_email)
     
     if not employee:
-        raise HTTPException(status_code=404, detail="Employee not found")
+        # Create new employee if they don't exist
+        employee_data = data.dict()
+        employee_data["status"] = UserStatus.PENDING # Initial status
+        employee = repo.create(employee_data)
     
     # Check if emp_id already exists
     if repo.exists_by_emp_id(data.emp_id):

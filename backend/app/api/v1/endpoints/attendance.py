@@ -76,3 +76,20 @@ async def update_attendance(
     service = AttendanceService(db)
     update_dict = data.dict(exclude_unset=True)
     return service.update_attendance_record(id, update_dict)
+
+@router.delete("/{id}")
+async def delete_attendance(
+    id: int,
+    admin: Employee = Depends(check_admin),
+    db: Session = Depends(get_db)
+):
+    """
+    Delete attendance record
+    
+    - Deletes specific attendance record
+    - Returns success message
+    
+    Requires: Admin/HR/CEO role
+    """
+    service = AttendanceService(db)
+    return service.delete_attendance_record(id)
