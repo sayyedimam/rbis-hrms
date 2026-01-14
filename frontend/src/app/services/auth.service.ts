@@ -40,6 +40,22 @@ export class AuthService {
     return this.http.post<any>(`${this.apiUrl}/verify`, verifyData);
   }
 
+  verifyOtp(email: string, otp: string): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/verify-otp`, { email, code: otp });
+  }
+
+  forgotPassword(email: string): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/forgot-password`, null, {
+      params: { email }
+    });
+  }
+
+  resetPassword(email: string, otp: string, newPassword: string): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/reset-password`, null, {
+      params: { email, otp, new_password: newPassword }
+    });
+  }
+
   login(credentials: { email: string; password: string }): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.apiUrl}/login`, credentials).pipe(
       tap(res => this.setSession(res))

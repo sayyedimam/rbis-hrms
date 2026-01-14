@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 import os
 from app.core.database import get_db
 from app.api.deps import check_admin
-from app.models.models import FileUploadLog, Employee
+from app.models.models import FileUploadLog, Employee, UserRole
 from app.core.azure_utils import download_file_stream
 
 router = APIRouter()

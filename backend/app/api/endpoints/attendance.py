@@ -167,6 +167,8 @@ from typing import Optional
 class AttendanceUpdate(BaseModel):
     first_in: Optional[str] = None
     last_out: Optional[str] = None
+    in_duration: Optional[str] = None
+    out_duration: Optional[str] = None
     attendance_status: Optional[str] = None
 
 @router.get("/")
@@ -196,21 +198,59 @@ async def update_attendance(
         record.first_in = data.first_in
     if data.last_out is not None:
         record.last_out = data.last_out
+    
+    # Update durations if provided
+    current_in_duration = record.in_duration
+    current_out_duration = record.out_duration
+
+    if data.in_duration is not None:
+        record.in_duration = data.in_duration
+        current_in_duration = data.in_duration
+    
+    if data.out_duration is not None:
+        record.out_duration = data.out_duration
+        current_out_duration = data.out_duration
+
+    # Recalculate Total Duration (In + Out)
+    def parse_dur(d_str):
+        if not d_str: return 0
+        try:
+            parts = str(d_str).split(':')
+            if len(parts) == 3:
+                h, m, s = map(int, parts)
+                return h*3600 + m*60 + s
+            elif len(parts) == 2:
+                h, m = map(int, parts)
+                return h*3600 + m*60
+            return 0
+        except:
+            return 0
+            
+    total_seconds = parse_dur(current_in_duration) + parse_dur(current_out_duration)
+    
+    # Format back to HH:MM:SS
+    m, s = divmod(total_seconds, 60)
+    h, m = divmod(m, 60)
+    record.total_duration = "{:02d}:{:02d}:{:02d}".format(h, m, s)
+
     if data.attendance_status is not None:
         record.attendance_status = data.attendance_status
         
     record.is_manually_corrected = True
     record.corrected_by = admin.email
     
-    # Recalculate duration if both times provided (Simple logic)
-    # Ideally should share logic with cleaner, but for manual edit we might rely on admin.
-    # We leave In/Out/Total Duration as-is unless we want to rebuild them.
-    # For now, simplistic update.
-    
     db.commit()
-    return {"message": "Attendance updated successfully", "record": {
-        "id": record.id,
-        "first_in": record.first_in,
-        "last_out": record.last_out,
-        "status": record.attendance_status
-    }}
+    return {"message": "Attendance record updated successfully"}
+@router.delete("/{id}")
+async def delete_attendance(
+    id: int,
+    db: Session = Depends(get_db),
+    admin: Employee = Depends(check_admin)
+):
+    record = db.query(Attendance).filter(Attendance.id == id).first()
+    if not record:
+        raise HTTPException(status_code=404, detail="Attendance record not found")
+    
+    db.delete(record)
+    db.commit()
+    return {"message": "Attendance record deleted successfully"}

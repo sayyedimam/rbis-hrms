@@ -3,6 +3,14 @@ from sqlalchemy.orm import relationship
 from app.core.database import Base
 import datetime
 import enum
+from datetime import timezone, timedelta
+
+# IST Timezone (UTC+5:30)
+IST = timezone(timedelta(hours=5, minutes=30))
+
+def get_ist_now():
+    """Returns current datetime in IST timezone"""
+    return datetime.datetime.now(IST)
 
 class UserRole(str, enum.Enum):
     SUPER_ADMIN = "SUPER_ADMIN"
@@ -28,9 +36,12 @@ class Employee(Base):
     password_hash = Column(String(255), nullable=True)
     is_verified = Column(Boolean, default=False)
     verification_code = Column(String(10), nullable=True)
+    otp_code = Column(String(10), nullable=True)
+    otp_created_at = Column(DateTime, nullable=True)
+    otp_purpose = Column(String(20), nullable=True)  # SIGNUP or PASSWORD_RESET
     role = Column(String(50), default="EMPLOYEE")
     status = Column(String(50), default="ACTIVE")
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    created_at = Column(DateTime, default=get_ist_now)
 
     attendance_records = relationship(
         "Attendance", 
@@ -68,7 +79,7 @@ class FileUploadLog(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     filename = Column(String(255))
-    uploaded_at = Column(DateTime, default=datetime.datetime.utcnow)
+    uploaded_at = Column(DateTime, default=get_ist_now)
     uploaded_by = Column(String(50))
     report_type = Column(String(100))
     file_hash = Column(String(64), unique=True, index=True)
@@ -105,7 +116,7 @@ class LeaveRequest(Base):
     hr_remarks = Column(String(500), nullable=True)
     ceo_remarks = Column(String(500), nullable=True)
     attachment_path = Column(String(255), nullable=True)
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    created_at = Column(DateTime, default=get_ist_now)
 
 class LeaveApprovalLog(Base):
     __tablename__ = "leave_approval_logs"
@@ -114,4 +125,4 @@ class LeaveApprovalLog(Base):
     approver_id = Column(String(50), ForeignKey("employees.emp_id"))
     action = Column(String(20)) # HR_APPROVED, CEO_APPROVED, REJECTED
     remarks = Column(String(500), nullable=True)
-    action_at = Column(DateTime, default=datetime.datetime.utcnow)
+    action_at = Column(DateTime, default=get_ist_now)

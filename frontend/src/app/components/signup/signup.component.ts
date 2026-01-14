@@ -56,10 +56,10 @@ export class SignupComponent {
   onVerify() {
     this.error = '';
     this.loading = true;
-    this.authService.verify(this.verificationData).subscribe({
+    this.authService.verifyOtp(this.verificationData.email, this.verificationData.code).subscribe({
       next: () => {
         this.loading = false;
-        alert('Verification successful! Please login.');
+        alert('Email verified successfully! Please login.');
         this.router.navigate(['/login']);
       },
       error: (err) => {

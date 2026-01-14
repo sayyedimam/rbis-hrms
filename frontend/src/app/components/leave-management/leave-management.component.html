@@ -138,12 +138,18 @@
               </td>
               <td>
                 <div class="remarks">
-                  <span *ngIf="req.hr_remarks" title="HR: {{ req.hr_remarks }}"
+                  <span
+                    *ngIf="
+                      req.status === 'APPROVED_BY_HR' ||
+                      req.status === 'APPROVED' ||
+                      req.hr_remarks
+                    "
+                    title="HR: {{ req.hr_remarks || 'Approved' }}"
                     >HR ✓</span
                   >
                   <span
-                    *ngIf="req.ceo_remarks"
-                    title="CEO: {{ req.ceo_remarks }}"
+                    *ngIf="req.status === 'APPROVED' || req.ceo_remarks"
+                    title="CEO: {{ req.ceo_remarks || 'Approved' }}"
                     >CEO ✓</span
                   >
                 </div>

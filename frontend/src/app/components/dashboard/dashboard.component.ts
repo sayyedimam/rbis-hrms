@@ -23,8 +23,13 @@ export class DashboardComponent implements OnInit, OnDestroy {
     loading = false;
     hasData = false;
     isAdmin = false;
+    canViewAll = false;
     
     // Edit State
+    isEditMode = false;
+    editSearchEmpId = '';
+    editSearchDate = '';
+    
     editingRecord: any = null;
     isSaving = false;
 
@@ -55,6 +60,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     public barData: ChartConfiguration<'bar'>['data'] = { labels: [], datasets: [] };
     public lineData: ChartConfiguration<'line'>['data'] = { labels: [], datasets: [] };
     public pieData: ChartConfiguration<'pie'>['data'] = { labels: [], datasets: [] };
+    
     public stats = { 
         present: 0, 
         absent: 0, 
@@ -109,9 +115,12 @@ export class DashboardComponent implements OnInit, OnDestroy {
     ) { }
 
     ngOnInit() {
+        const user = this.authService.currentUser; // Get snapshot
         this.isAdmin = this.authService.getUserRole() === 'SUPER_ADMIN';
-        const user = this.authService.currentUser;
-        if (!this.isAdmin && user) {
+        const role = this.authService.getUserRole();
+        this.canViewAll = this.isAdmin || role === 'HR' || role === 'CEO';
+        
+        if (!this.canViewAll && user) {
             this.selectedEmp = user.emp_id;
         }
 
@@ -124,9 +133,15 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
         // Also subscribe to currentUser in case it updates
         this.subs.add(this.authService.currentUser$.subscribe(u => {
-            if (!this.isAdmin && u) {
-                this.selectedEmp = u.emp_id;
-                this.applyFilters();
+            if (u) {
+                const r = u.role;
+                this.isAdmin = r === 'SUPER_ADMIN';
+                this.canViewAll = this.isAdmin || r === 'HR' || r === 'CEO';
+                
+                if (!this.canViewAll) {
+                    this.selectedEmp = u.emp_id;
+                    this.applyFilters();
+                }
             }
         }));
     }
@@ -380,8 +395,29 @@ export class DashboardComponent implements OnInit, OnDestroy {
         } catch { return 0; }
     }
 
+    // For the Detailed Records Table (bottom of dashboard)
     get tableData() {
         return this.filteredData;
+    }
+
+    // For the Admin Edit Mode (Overlay/Modal)
+    get editBoardData() {
+        let d = this.rawData;
+        if (this.editSearchEmpId) {
+            d = d.filter(r => r.EmpID && r.EmpID.toLowerCase().includes(this.editSearchEmpId.toLowerCase()));
+        }
+        if (this.editSearchDate) {
+            d = d.filter(r => r.Date === this.editSearchDate);
+        }
+        // Limit to 50 for performance if no search
+        if (!this.editSearchEmpId && !this.editSearchDate) {
+            return d.slice(0, 50); 
+        }
+        return d;
+    }
+    
+    toggleEditMode() {
+        this.isEditMode = !this.isEditMode;
     }
 
     openEditModal(record: any) {
@@ -393,13 +429,67 @@ export class DashboardComponent implements OnInit, OnDestroy {
         this.editingRecord = null;
     }
 
+    deleteRecord(id: number) {
+        if (!confirm('Are you sure you want to delete this record/')) return;
+        this.attendanceService.deleteAttendance(id).subscribe({
+            next: () => {
+                this.notificationService.showAlert('Record deleted', 'success');
+                this.attendanceService.fetchAttendance();
+            },
+            error: () => this.notificationService.showAlert('Delete failed', 'error')
+        });
+    }
+
     saveRecord() {
         if (!this.editingRecord) return;
+
+        // Sanitize Inputs: Default to 00:00 if empty
+        if (!this.editingRecord.First_In) this.editingRecord.First_In = '00:00';
+        if (!this.editingRecord.Last_Out) this.editingRecord.Last_Out = '00:00';
+        if (!this.editingRecord.In_Duration) this.editingRecord.In_Duration = '00:00';
+        if (!this.editingRecord.Out_Duration) this.editingRecord.Out_Duration = '00:00';
+
+        // Validation Helper
+        const isValidTime = (t: any) => {
+            if (!t) return true; 
+            return /^([0-1]?[0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$/.test(String(t).trim());
+        };
+
+        // Validate Fields
+        if (!isValidTime(this.editingRecord.First_In)) {
+            this.notificationService.showAlert('Invalid First In time. Use HH:MM or HH:MM:SS', 'error');
+            return;
+        }
+        if (!isValidTime(this.editingRecord.Last_Out)) {
+            this.notificationService.showAlert('Invalid Last Out time. Use HH:MM or HH:MM:SS', 'error');
+            return;
+        }
+        if (!isValidTime(this.editingRecord.In_Duration)) {
+            this.notificationService.showAlert('Invalid In Duration. Use HH:MM or HH:MM:SS', 'error');
+            return;
+        }
+        if (!isValidTime(this.editingRecord.Out_Duration)) {
+            this.notificationService.showAlert('Invalid Out Duration. Use HH:MM or HH:MM:SS', 'error');
+            return;
+        }
+
         this.isSaving = true;
+
+        // Auto-Update Status Logic
+        const fin = this.editingRecord.First_In;
+        const lout = this.editingRecord.Last_Out;
+
+        if (fin === '00:00' && lout === '00:00') {
+            this.editingRecord.Attendance = 'Absent';
+        } else if (fin !== '00:00' && lout !== '00:00') {
+            this.editingRecord.Attendance = 'Present';
+        }
 
         const payload = {
             first_in: this.editingRecord.First_In,
             last_out: this.editingRecord.Last_Out,
+            in_duration: this.editingRecord.In_Duration,
+            out_duration: this.editingRecord.Out_Duration,
             attendance_status: this.editingRecord.Attendance
         };
 

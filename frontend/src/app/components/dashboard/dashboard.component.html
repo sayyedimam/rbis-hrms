@@ -28,6 +28,14 @@
         >
           <i data-lucide="download"></i> Export Analytics
         </button>
+        <button
+          class="btn-edit-mode"
+          (click)="toggleEditMode()"
+          *ngIf="isAdmin"
+          title="Manual Correction Mode"
+        >
+          <i data-lucide="pencil"></i> Edit Attendance
+        </button>
       </div>
     </div>
 
@@ -42,7 +50,7 @@
           </option>
         </select>
       </div>
-      <div class="filter-group" *ngIf="isAdmin">
+      <div class="filter-group" *ngIf="canViewAll">
         <label><i data-lucide="user"></i> Context</label>
         <select [(ngModel)]="selectedEmp" (change)="applyFilters()">
           <option value="">Organization Wide</option>
@@ -51,14 +59,14 @@
           </option>
         </select>
       </div>
-      <div class="filter-group personal-context" *ngIf="!isAdmin">
+      <div class="filter-group personal-context" *ngIf="!canViewAll">
         <label><i data-lucide="user"></i> Context</label>
         <div class="static-value">Personal Dashboard</div>
       </div>
       <button
         class="reset-btn"
         (click)="resetFilters()"
-        *ngIf="selectedDate || (isAdmin && selectedEmp)"
+        *ngIf="selectedDate || (canViewAll && selectedEmp)"
       >
         Clear Filters
       </button>
@@ -183,51 +191,94 @@
       </div>
     </div>
 
-    <!-- Detailed Records Table -->
-    <div class="table-section" *ngIf="!loading && hasData">
-      <div class="section-title-row">
-        <h3>Detailed Records</h3>
-        <span class="badg">{{ tableData.length }} Entries</span>
-      </div>
-      <div class="table-responsive">
-        <table class="analytics-table">
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>EmpID</th>
-              <th>First In</th>
-              <th>Last Out</th>
-              <th>Total Duration</th>
-              <th>Status</th>
-              <th *ngIf="isAdmin">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let row of tableData">
-              <td>{{ row.Date }}</td>
-              <td>{{ row.EmpID }}</td>
-              <td>{{ row.First_In || "--:--" }}</td>
-              <td>{{ row.Last_Out || "--:--" }}</td>
-              <td>{{ row.Total_Duration || row.In_Duration || "--:--" }}</td>
-              <td>
-                <span
-                  class="status-badge"
-                  [class]="row.Attendance | lowercase"
-                  >{{ row.Attendance }}</span
-                >
-              </td>
-              <td *ngIf="isAdmin">
-                <button class="btn-icon-edit" (click)="openEditModal(row)">
-                  <i data-lucide="pencil"></i>
-                </button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+    <!-- Edit Mode Overlay (Full Screen or Large Modal) -->
+    <div class="edit-mode-main-overlay" *ngIf="isEditMode">
+      <div class="edit-console-card">
+        <div class="console-header">
+          <div class="h-left">
+            <h3>Attendance Correction Console</h3>
+            <p>Search and modify records directly</p>
+          </div>
+          <button class="close-console" (click)="toggleEditMode()">
+            <i data-lucide="x"></i> Close
+          </button>
+        </div>
+
+        <div class="console-search-bar">
+          <div class="search-input">
+            <label>Enter Emp ID</label>
+            <input
+              type="text"
+              [(ngModel)]="editSearchEmpId"
+              placeholder="e.g. RBIS0010"
+            />
+          </div>
+          <div class="search-input">
+            <label>Enter Date</label>
+            <input type="date" [(ngModel)]="editSearchDate" />
+          </div>
+        </div>
+
+        <div class="console-table-wrapper">
+          <table class="analytics-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>EmpID</th>
+                <th>First In</th>
+                <th>Last Out</th>
+                <th>In Duration</th>
+                <th>Out Duration</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let row of editBoardData">
+                <td>{{ row.Date }}</td>
+                <td>{{ row.EmpID }}</td>
+                <td>{{ row.First_In || "--:--" }}</td>
+                <td>{{ row.Last_Out || "--:--" }}</td>
+                <td>{{ row.In_Duration || "--:--" }}</td>
+                <td>{{ row.Out_Duration || "--:--" }}</td>
+                <td>
+                  <span
+                    class="status-badge"
+                    [class]="row.Attendance | lowercase"
+                    >{{ row.Attendance }}</span
+                  >
+                </td>
+                <td>
+                  <div class="action-buttons-row">
+                    <button
+                      class="btn-icon-edit"
+                      (click)="openEditModal(row)"
+                      title="Edit"
+                    >
+                      <i data-lucide="pencil"></i>
+                    </button>
+                    <button
+                      class="btn-icon-delete"
+                      (click)="deleteRecord(row.id)"
+                      title="Delete"
+                    >
+                      <i data-lucide="trash-2"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              <tr *ngIf="editBoardData.length === 0">
+                <td colspan="8" class="no-records">
+                  No records found matching search.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
 
-    <!-- Edit Modal -->
+    <!-- Edit Modal (Still needed for the actual Form Interaction) -->
     <div class="modal-overlay" *ngIf="editingRecord">
       <div class="modal-card">
         <div class="modal-header">
@@ -248,6 +299,22 @@
             <input
               type="text"
               [(ngModel)]="editingRecord.Last_Out"
+              placeholder="HH:MM:SS"
+            />
+          </div>
+          <div class="form-group">
+            <label>In Duration</label>
+            <input
+              type="text"
+              [(ngModel)]="editingRecord.In_Duration"
+              placeholder="HH:MM:SS"
+            />
+          </div>
+          <div class="form-group">
+            <label>Out Duration</label>
+            <input
+              type="text"
+              [(ngModel)]="editingRecord.Out_Duration"
               placeholder="HH:MM:SS"
             />
           </div>

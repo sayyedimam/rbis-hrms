@@ -59,6 +59,10 @@ export class AttendanceService {
     return this.http.put(`${this.apiUrl}/attendance/${id}`, data);
   }
 
+  deleteAttendance(id: number): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/attendance/${id}`);
+  }
+
   fetchAttendance(): void {
     this.http.get<any[]>(`${this.apiUrl}/attendance/`).subscribe({
       next: (data) => {
