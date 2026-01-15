@@ -2,6 +2,8 @@ import { Routes } from '@angular/router';
 import { LoginComponent } from './components/login/login.component';
 import { SignupComponent } from './components/signup/signup.component';
 import { DashboardComponent } from './components/dashboard/dashboard.component';
+import { AnalyticsComponent } from './components/analytics/analytics.component';
+import { AttendanceOperationsComponent } from './components/attendance-operations/attendance-operations.component';
 import { OnboardingComponent } from './components/onboarding/onboarding.component';
 import { RecordsComponent } from './components/records/records.component';
 import { ProfileComponent } from './components/profile/profile.component';
@@ -13,6 +15,8 @@ export const routes: Routes = [
   { path: 'login', component: LoginComponent },
   { path: 'signup', component: SignupComponent },
   { path: 'dashboard', component: DashboardComponent, canActivate: [AuthGuard] },
+  { path: 'analytics', component: AnalyticsComponent, canActivate: [AuthGuard] },
+  { path: 'attendance-operations', component: AttendanceOperationsComponent, canActivate: [AuthGuard] },
   { path: 'onboarding', component: OnboardingComponent, canActivate: [AuthGuard] },
   { path: 'records', component: RecordsComponent, canActivate: [AuthGuard] },
   { path: 'employee-management', component: EmployeeManagementComponent, canActivate: [AuthGuard] },

@@ -160,7 +160,7 @@
   margin-bottom: 8px;
 }
 
-.form-group select, .form-group input, .form-group textarea {
+.form-group select, .form-group input, .form-group textarea, .static-input {
   width: 100%;
   padding: 12px;
   border: 1px solid #e2e8f0;
@@ -168,6 +168,12 @@
   font-size: 14px;
   outline: none;
   transition: border-color 0.2s;
+}
+
+.static-input {
+    background-color: #f8fafc;
+    color: #64748b;
+    cursor: default;
 }
 
 .form-group select:focus, .form-group input:focus, .form-group textarea:focus {

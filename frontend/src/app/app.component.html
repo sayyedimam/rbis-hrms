@@ -41,7 +41,18 @@
   <nav class="hrms-top-nav">
     <div class="nav-container">
       <a routerLink="/dashboard" routerLinkActive="active" class="nav-item">
-        <i data-lucide="layout-dashboard"></i> Analytics
+        <i data-lucide="layout-dashboard"></i> Dashboard
+      </a>
+      <a routerLink="/analytics" routerLinkActive="active" class="nav-item">
+        <i data-lucide="bar-chart-2"></i> Analytics
+      </a>
+      <a
+        routerLink="/attendance-operations"
+        routerLinkActive="active"
+        class="nav-item"
+        *ngIf="isAdmin"
+      >
+        <i data-lucide="settings"></i> Operations
       </a>
       <a
         routerLink="/onboarding"

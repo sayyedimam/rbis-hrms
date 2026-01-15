@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from fastapi import UploadFile, HTTPException
 from typing import List, Dict
 import logging
+from datetime import date, datetime
 
 from app.repositories.attendance_repository import AttendanceRepository
 from app.repositories.file_repository import FileRepository
@@ -179,6 +180,7 @@ class AttendanceService:
                 "total_duration": format_time(rec.get('Total_Duration')),
                 "punch_records": rec.get('Punch_Records'),
                 "attendance_status": rec.get('Attendance'),
+                "employee_name": rec.get('Employee_Name'),
                 "source_file": source_filename
             }
             
@@ -202,19 +204,25 @@ class AttendanceService:
     def get_attendance_records(self, user: Employee) -> List:
         """
         Get attendance records based on user role
-        
-        Args:
-            user: Current user
-            
-        Returns:
-            List of attendance records
         """
         if user.role == UserRole.EMPLOYEE:
-            # Employees see only their own records
-            return self.attendance_repo.get_by_emp_id(user.emp_id)
+            records = self.attendance_repo.get_by_emp_id(user.emp_id)
         else:
-            # Admin/HR/CEO see all records
-            return self.attendance_repo.get_all()
+            records = self.attendance_repo.get_all()
+            
+        # Enrich and flatten for frontend
+        result = []
+        for r in records:
+            data = {c.name: getattr(r, c.name) for c in r.__table__.columns}
+            # Support both date objects and ISO strings
+            if isinstance(data['date'], (date, datetime)):
+                data['date'] = data['date'].isoformat()
+            
+            # Resolve name (owner relationship takes priority)
+            data['employee_name'] = (r.owner.full_name if r.owner else None) or r.employee_name
+            result.append(data)
+            
+        return result
     
     def update_attendance_record(
         self,

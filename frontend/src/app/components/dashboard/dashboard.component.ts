@@ -6,7 +6,6 @@ import { ChartConfiguration, ChartOptions, Chart, registerables } from 'chart.js
 import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
-import { UploadComponent } from '../upload/upload.component';
 import { RouterModule } from '@angular/router';
 import { NotificationService } from '../../services/notification.service';
 
@@ -15,7 +14,7 @@ Chart.register(...registerables);
 @Component({
     selector: 'app-dashboard',
     standalone: true,
-    imports: [CommonModule, BaseChartDirective, FormsModule, UploadComponent, RouterModule],
+    imports: [CommonModule, FormsModule, RouterModule, BaseChartDirective],
     templateUrl: './dashboard.component.html',
     styleUrl: './dashboard.component.css'
 })
@@ -24,84 +23,64 @@ export class DashboardComponent implements OnInit, OnDestroy {
     hasData = false;
     isAdmin = false;
     canViewAll = false;
+    showStatsCards = false;
     
-    // Edit State
-    isEditMode = false;
-    editSearchEmpId = '';
-    editSearchDate = '';
-    
-    editingRecord: any = null;
-    isSaving = false;
-
     // Drill Down State
     showDrillDown = false;
     drillDownTitle = '';
     drillDownList: any[] = [];
+    hideTimings = false;
 
     // Raw Data Storage
     private rawData: any[] = [];
     private filteredData: any[] = [];
 
-    // Filter Options
     availableDates: string[] = [];
     availableEmps: string[] = [];
 
     // Selected Filters
-    selectedDate: string = '';
+    fromDate: string = '';
+    toDate: string = '';
     selectedEmp: string = '';
-    startDate: string = '';
-    endDate: string = '';
+    searchTerm: string = '';
+    
+    // UI Metadata
+    activeEmployee: any = null;
 
-    // Intelligence State
-    showTrendChart = true;
-
-    private subs = new Subscription();
-
+    // Chart Configuration
     public pieChartOptions: ChartOptions<'pie'> = {
         responsive: true,
         maintainAspectRatio: false,
         plugins: { legend: { position: 'bottom' } }
     };
 
-    // Chart Data Objects
-    public barData: ChartConfiguration<'bar'>['data'] = { labels: [], datasets: [] };
-    public lineData: ChartConfiguration<'line'>['data'] = { labels: [], datasets: [] };
-    public pieData: ChartConfiguration<'pie'>['data'] = { labels: [], datasets: [] };
-    
-    public stats = { 
-        present: 0, 
-        absent: 0, 
-        onLeave: 0,
-        avgHours: 0, 
-        label: 'Latest', 
-        firstIn: '', 
-        lastOut: '',
-        inDuration: '',
-        outDuration: '',
-        totalDuration: ''
-    };
-
     public barChartOptions: ChartOptions<'bar'> = {
         responsive: true,
         maintainAspectRatio: false,
-        scales: { y: { min: 0, title: { display: true, text: 'Count' } } },
+        scales: { y: { min: 0 } },
         plugins: { 
             legend: { display: true },
             tooltip: {
                 callbacks: {
-                    footer: (tooltipItems: any) => {
-                        const date = tooltipItems[0].label;
-                        if (this.selectedEmp) {
-                            const rec = this.rawData.find(d => String(d.Date) === date && String(d.EmpID) === this.selectedEmp);
-                            if (rec) {
-                                return [
-                                    `In: ${rec.First_In || '--:--'}`,
-                                    `Out: ${rec.Last_Out || '--:--'}`,
-                                    `Duration: ${rec.Total_Duration || '--:--'}`
-                                ].join('\n');
+                    label: (context) => {
+                        const index = context.dataIndex;
+                        const label = context.dataset.label || '';
+                        const val = (context.parsed && typeof context.parsed.y === 'number') ? context.parsed.y : 0;
+                        
+                        // Access the cached dailyStats via a private ref or recalculate
+                        // For simplicity, we can store dailyStats in a component property
+                        const stats = this.dailyChartStats[index];
+                        if (stats) {
+                            if (this.activeEmployee) {
+                                return `Hours: ${val.toFixed(1)}h`;
                             }
+                            return [
+                                `${label}: ${val}`,
+                                `Absent: ${stats.absent}`,
+                                `Avg Hours: ${stats.avgH.toFixed(1)}h`
+                            ];
                         }
-                        return '';
+                        return `${label}: ${val}`;
                     }
                 }
             }
@@ -111,9 +90,36 @@ export class DashboardComponent implements OnInit, OnDestroy {
     public lineChartOptions: ChartOptions<'line'> = {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: { legend: { display: true } },
-        scales: { y: { beginAtZero: true, title: { display: true, text: 'Hours' } } }
+        scales: { y: { min: 0 } },
+        plugins: { 
+            legend: { display: true },
+            tooltip: {
+                callbacks: {
+                    label: (context) => {
+                        const val = (context.parsed && typeof context.parsed.y === 'number') ? context.parsed.y : 0;
+                        return `Avg Hours: ${val.toFixed(1)}h`;
+                    }
+                }
+            }
+        }
     };
+
+    public barData: ChartConfiguration<'bar'>['data'] = { labels: [], datasets: [] };
+    public lineData: ChartConfiguration<'line'>['data'] = { labels: [], datasets: [] };
+    public pieData: ChartConfiguration<'pie'>['data'] = { labels: [], datasets: [] };
+    showTrendChart = false;
+
+    private subs = new Subscription();
+
+    public stats = { 
+        present: 0, 
+        absent: 0, 
+        onLeave: 0,
+        avgHours: 0, 
+        label: 'Latest'
+    };
+
+    private dailyChartStats: any[] = [];
 
     constructor(
         private attendanceService: AttendanceService,
@@ -122,7 +128,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     ) { }
 
     ngOnInit() {
-        const user = this.authService.currentUser; // Get snapshot
+        const user = this.authService.currentUser;
         this.isAdmin = this.authService.getUserRole() === 'SUPER_ADMIN';
         const role = this.authService.getUserRole();
         this.canViewAll = this.isAdmin || role === 'HR' || role === 'CEO';
@@ -131,14 +137,12 @@ export class DashboardComponent implements OnInit, OnDestroy {
             this.selectedEmp = user.emp_id;
         }
 
-        // Fetch data from DB on init
         this.attendanceService.fetchAttendance();
 
-        this.subs.add(this.attendanceService.typeAData$.subscribe(data => this.syncData()));
-        this.subs.add(this.attendanceService.typeBData$.subscribe(data => this.syncData()));
+        this.subs.add(this.attendanceService.typeAData$.subscribe(() => this.syncData()));
+        this.subs.add(this.attendanceService.typeBData$.subscribe(() => this.syncData()));
         this.subs.add(this.attendanceService.hasData$.subscribe(has => this.hasData = has));
 
-        // Also subscribe to currentUser in case it updates
         this.subs.add(this.authService.currentUser$.subscribe(u => {
             if (u) {
                 const r = u.role;
@@ -154,20 +158,16 @@ export class DashboardComponent implements OnInit, OnDestroy {
     }
 
     syncData() {
-        // Merge A and B data into a single view
         const dataA = this.attendanceService.typeAData;
         const dataB = this.attendanceService.typeBData;
         
-        // Use a map to merge records for the same employee/date
         const mergeMap = new Map();
-        
         [...dataA, ...dataB].forEach(rec => {
             const key = `${rec.EmpID}_${rec.Date}`;
             if (!mergeMap.has(key)) {
                 mergeMap.set(key, { ...rec });
             } else {
                 const existing = mergeMap.get(key);
-                // Merge details, prefer Type A for durations if available
                 existing.In_Duration = existing.In_Duration || rec.In_Duration;
                 existing.Out_Duration = existing.Out_Duration || rec.Out_Duration;
                 if (rec.Attendance === 'Present') existing.Attendance = 'Present';
@@ -200,64 +200,136 @@ export class DashboardComponent implements OnInit, OnDestroy {
     }
 
     resetFilters() {
-        this.selectedDate = '';
-        this.startDate = '';
-        this.endDate = '';
-        if (this.isAdmin) {
+        this.fromDate = '';
+        this.toDate = '';
+        this.searchTerm = '';
+        
+        if (this.canViewAll) {
             this.selectedEmp = '';
         } else {
             const user = this.authService.currentUser;
             this.selectedEmp = user?.emp_id || '';
         }
+        this.activeEmployee = null;
+        this.showStatsCards = false;
         this.applyFilters();
     }
 
     applyFilters() {
-        const now = new Date();
-        const y = now.getFullYear();
-        const m = String(now.getMonth() + 1).padStart(2, '0');
-        const d = String(now.getDate()).padStart(2, '0');
-        const todayStr = `${y}-${m}-${d}`;
+        // Validation: If no filters, show organization-wide for latest date (handled in calculateStats)
+        let filtered = [...this.rawData];
 
-        // Only show records up to today
-        let filtered = this.rawData.filter(d => {
-            const dateStr = String(d.Date).split('T')[0];
-            return dateStr <= todayStr;
-        });
-        
-        if (this.selectedDate) {
-            filtered = filtered.filter(d => String(d.Date).split('T')[0] === this.selectedDate);
-        } else if (this.startDate && this.endDate) {
+        // 1. Date Range Filtering
+        if (this.fromDate) {
+            const start = this.fromDate;
+            const end = this.toDate || this.fromDate; // If "To" is blank, use "From" for single day
             filtered = filtered.filter(d => {
                 const dateStr = String(d.Date).split('T')[0];
-                return dateStr >= this.startDate && dateStr <= this.endDate;
+                return dateStr >= start && dateStr <= end;
             });
+        } else {
+            // Default: Only past/present dates
+            const todayStr = new Date().toISOString().split('T')[0];
+            filtered = filtered.filter(d => String(d.Date).split('T')[0] <= todayStr);
         }
         
+        // 2. Employee Filtering
         if (this.selectedEmp) {
             filtered = filtered.filter(d => String(d['EmpID']) === this.selectedEmp);
+        } else if (this.searchTerm.trim()) {
+            const term = this.searchTerm.trim().toLowerCase();
+            filtered = filtered.filter(r => {
+                const empIdMatch = (r.EmpID && r.EmpID.toLowerCase() === term);
+                const nameMatch = r.Employee_Name && r.Employee_Name.toLowerCase().includes(term);
+                return empIdMatch || nameMatch;
+            });
         }
+
         this.filteredData = filtered;
+        
+        // 3. Visibility and Metadata
+        const isIndividualSearch = this.selectedEmp || (this.searchTerm.trim() && filtered.length > 0 && this.isExactMatch(filtered));
+        this.showStatsCards = !!(this.fromDate && !this.toDate) || !!isIndividualSearch;
+        
+        if (isIndividualSearch) {
+            const firstWithInfo = filtered.find(r => r.Employee_Name);
+            if (firstWithInfo) {
+                this.activeEmployee = {
+                    EmpID: firstWithInfo.EmpID,
+                    Name: firstWithInfo.Employee_Name
+                };
+            } else if (filtered.length > 0) {
+                this.activeEmployee = { EmpID: filtered[0].EmpID, Name: 'Unknown Employee' };
+            }
+        } else {
+            this.activeEmployee = null;
+        }
+
+        this.calculateStats(filtered);
         this.processChartData(filtered);
+    }
+
+    private calculateStats(data: any[]) {
+        if (!data || data.length === 0) {
+            this.stats = { present: 0, absent: 0, onLeave: 0, avgHours: 0, label: 'No Data' };
+            return;
+        }
+
+        const dates = [...new Set(data.map(d => String(d.Date).split('T')[0]))].sort();
+        
+        if (this.fromDate || this.selectedEmp || this.searchTerm) {
+            // Filtered view
+            const present = data.filter(d => d.Attendance === 'Present').length;
+            const absent = data.filter(d => d.Attendance === 'Absent').length;
+            const onLeave = data.filter(d => d.Attendance === 'On Leave').length;
+            
+            const hours = data.filter(d => d.Attendance === 'Present').map(r => this.parseDuration(r.Total_Duration || r.In_Duration));
+            let avgH = hours.length > 0 ? hours.reduce((a, b) => a + b, 0) / hours.length : 0;
+            if (avgH === 0 && present > 0) avgH = 8.0;
+
+            this.stats = {
+                present,
+                absent,
+                onLeave,
+                avgHours: avgH,
+                label: this.fromDate && !this.toDate ? this.fromDate : 'Filtered'
+            };
+        } else {
+            // Default: Show latest date summary
+            const latestDate = dates[dates.length - 1];
+            const latestRecords = data.filter(d => String(d.Date).split('T')[0] === latestDate);
+            
+            const present = latestRecords.filter(d => d.Attendance === 'Present').length;
+            const absent = latestRecords.filter(d => d.Attendance === 'Absent').length;
+            const onLeave = latestRecords.filter(d => d.Attendance === 'On Leave').length;
+            
+            const hours = latestRecords.filter(d => d.Attendance === 'Present').map(r => this.parseDuration(r.Total_Duration || r.In_Duration));
+            let avgH = hours.length > 0 ? hours.reduce((a, b) => a + b, 0) / hours.length : 0;
+            if (avgH === 0 && present > 0) avgH = 8.0;
+
+            this.stats = {
+                present,
+                absent,
+                onLeave,
+                avgHours: avgH,
+                label: 'Latest'
+            };
+        }
     }
 
     private processChartData(data: any[]) {
         if (!data || data.length === 0) {
-            this.stats = { 
-                present: 0, absent: 0, onLeave: 0, avgHours: 0, label: 'No Data', 
-                firstIn: '--:--', lastOut: '--:--', inDuration: '--:--', outDuration: '--:--', totalDuration: '00:00' 
-            };
             this.barData = { labels: [], datasets: [] };
             this.lineData = { labels: [], datasets: [] };
             this.pieData = { labels: [], datasets: [] };
             return;
         }
 
-        const labels = [...new Set(data.map(d => String(d.Date)))].sort();
+        const labels = [...new Set(data.map(d => String(d.Date).split('T')[0]))].sort();
         this.showTrendChart = labels.length > 1;
 
         const dailyStats = labels.map(date => {
-            const dayRecords = data.filter(d => String(d.Date) === date);
+            const dayRecords = data.filter(d => String(d.Date).split('T')[0] === date);
             const present = dayRecords.filter(d => d.Attendance === 'Present').length;
             const absent = dayRecords.filter(d => d.Attendance === 'Absent').length;
             const onLeave = dayRecords.filter(d => d.Attendance === 'On Leave').length;
@@ -270,80 +342,30 @@ export class DashboardComponent implements OnInit, OnDestroy {
             return { date, present, absent, onLeave, avgH };
         });
 
-        // Determine context for stats
-        if (this.selectedDate && this.selectedEmp) {
-            // Specific day for specific employee
-            const rec = data[0]; 
-            this.stats = {
-                present: rec.Attendance === 'Present' ? 1 : 0,
-                absent: rec.Attendance === 'Absent' ? 1 : 0,
-                onLeave: rec.Attendance === 'On Leave' ? 1 : 0,
-                avgHours: rec.Attendance === 'Present' ? this.parseDuration(rec.Total_Duration || rec.In_Duration) : 0,
-                label: 'Selected Day',
-                firstIn: rec.First_In || '--:--',
-                lastOut: rec.Last_Out || '--:--',
-                inDuration: rec.In_Duration || '--:--',
-                outDuration: rec.Out_Duration || '--:--',
-                totalDuration: rec.Total_Duration || '--:--'
-            };
-        } else if (this.selectedEmp) {
-            // Cumulative for employee
-            const latestRecord = data[data.length - 1];
-            const totalPresent = data.filter(d => d.Attendance === 'Present').length;
-            const totalOnLeave = data.filter(d => d.Attendance === 'On Leave').length;
-            const totalAbsent = data.filter(d => d.Attendance === 'Absent').length;
-            const hours = data.filter(d => d.Attendance === 'Present').map(r => this.parseDuration(r.Total_Duration || r.In_Duration));
-            let totalAvgH = hours.length > 0 ? hours.reduce((a, b) => a + b, 0) / hours.length : 0;
-            if (totalAvgH === 0 && totalPresent > 0) totalAvgH = 8.0;
+        this.dailyChartStats = dailyStats;
 
-            this.stats = { 
-                present: totalPresent, 
-                absent: totalAbsent, 
-                onLeave: totalOnLeave,
-                avgHours: totalAvgH, 
-                label: 'Cumulative',
-                firstIn: latestRecord?.First_In || '--:--',
-                lastOut: latestRecord?.Last_Out || '--:--',
-                inDuration: latestRecord?.In_Duration || '--:--',
-                outDuration: latestRecord?.Out_Duration || '--:--',
-                totalDuration: latestRecord?.Total_Duration || '--:--'
-            };
-        } else {
-            // Latest day for organization or specific day for organization
-            const targetDay = this.selectedDate ? dailyStats[0] : dailyStats[dailyStats.length - 1];
-            const latestRecords = data.filter(d => String(d.Date) === targetDay.date);
-            const pulseRecord = latestRecords[0]; 
-
-            this.stats = { 
-                present: targetDay.present, 
-                absent: targetDay.absent, 
-                onLeave: targetDay.onLeave,
-                avgHours: targetDay.avgH, 
-                label: this.selectedDate ? 'Selected Day' : 'Latest Day',
-                firstIn: pulseRecord?.First_In || '--:--',
-                lastOut: pulseRecord?.Last_Out || '--:--',
-                inDuration: pulseRecord?.In_Duration || '--:--',
-                outDuration: pulseRecord?.Out_Duration || '--:--',
-                totalDuration: pulseRecord?.Total_Duration || '--:--'
-            };
-        }
+        // For single employee (ID or specific search match)
+        const isSingleEmp = this.selectedEmp || (this.activeEmployee && labels.length > 1);
 
         this.barData = {
             labels: labels,
             datasets: [
-                {
-                    data: dailyStats.map(s => s.present),
-                    label: 'Present',
-                    backgroundColor: '#4f46e5',
-                    borderRadius: 6,
-                    barThickness: labels.length > 10 ? undefined : 30
+                { 
+                    data: isSingleEmp 
+                        ? dailyStats.map(s => s.avgH) // Show duration (avgH is actual hour for single emp)
+                        : dailyStats.map(s => s.present), 
+                    label: isSingleEmp ? 'Office Hours' : 'Present Count', 
+                    backgroundColor: isSingleEmp ? '#10b981' : '#4f46e5', 
+                    borderRadius: 6 
                 },
-                {
-                    data: dailyStats.map(s => s.onLeave),
-                    label: 'On Leave',
-                    backgroundColor: '#93c5fd', // Light blue for leave
+                { 
+                    data: isSingleEmp 
+                        ? [] // No on-leave count for single employee duration bar
+                        : dailyStats.map(s => s.onLeave), 
+                    label: 'On Leave', 
+                    backgroundColor: '#93c5fd', 
                     borderRadius: 6,
-                    barThickness: labels.length > 10 ? undefined : 30
+                    hidden: isSingleEmp
                 }
             ]
         };
@@ -360,7 +382,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
             }]
         };
 
-        const currentSnapshot = this.selectedEmp ? { present: this.stats.present, absent: this.stats.absent, onLeave: this.stats.onLeave } : (dailyStats[dailyStats.length - 1] || { present: 0, absent: 0, onLeave: 0 });
+        const currentSnapshot = dailyStats[dailyStats.length - 1];
         this.pieData = {
             labels: ['Present', 'Absent', 'On Leave'],
             datasets: [{
@@ -371,27 +393,34 @@ export class DashboardComponent implements OnInit, OnDestroy {
         };
     }
 
+    private isExactMatch(data: any[]): boolean {
+        if (data.length === 0) return false;
+        const firstId = data[0].EmpID;
+        return data.every((r: any) => r.EmpID === firstId);
+    }
+
     viewStatusDetails(status: string) {
-        if (!this.canViewAll) return;
+        // Allowed for everyone (individual or admin)
         
-        // Match the date scope of the stat cards
         let targetData = this.filteredData;
-        if (!this.selectedDate) {
-            // If "All Dates", the stats show the LATEST date only
+        if (!this.fromDate && !this.activeEmployee && !this.selectedEmp) {
             const dates = [...new Set(this.filteredData.map(d => String(d.Date).split('T')[0]))].sort();
             const latestDate = dates[dates.length - 1];
             targetData = this.filteredData.filter(d => String(d.Date).split('T')[0] === latestDate);
         }
 
-        this.drillDownTitle = `${status} List ${this.stats.label}`;
+        this.drillDownTitle = `${status} List`;
+        this.hideTimings = status === 'Absent' || status === 'On Leave';
         this.drillDownList = targetData
-            .filter(d => d.Attendance === status)
-            .map(d => ({
-                emp_id: d.EmpID,
-                firstIn: d.First_In || '--:--',
-                lastOut: d.Last_Out || '--:--',
-                duration: d.Total_Duration || '--:--',
-                hideTimings: status === 'Absent' || status === 'On Leave'
+            .filter((d: any) => d.Attendance === status)
+            .map((d: any) => ({
+                Date: String(d.Date).split('T')[0],
+                EmpID: d.EmpID,
+                Name: d.Employee_Name || '--',
+                status: d.Attendance,
+                in: d.First_In,
+                out: d.Last_Out,
+                duration: d.Total_Duration
             }));
         this.showDrillDown = true;
     }
@@ -401,167 +430,16 @@ export class DashboardComponent implements OnInit, OnDestroy {
         this.drillDownList = [];
     }
 
-    exportToCSV() {
-        if (!this.filteredData || this.filteredData.length === 0) return;
-        
-        // Specific headers requested by user
-        const exportHeaders = [
-            'Date', 'empID', 'first In', 'Last out', 
-            'In duration', 'out duration', 'Attendance', 'total office duration'
-        ];
-        
-        const csvRows = [
-            exportHeaders.join(','),
-            ...this.filteredData.map(row => [
-                row.Date,
-                row.EmpID,
-                row['First_In'] || '--:--',
-                row['Last_Out'] || '--:--',
-                row.In_Duration,
-                row.Out_Duration,
-                row.Attendance,
-                row['Total_Duration'] || '--:--'
-            ].map(val => {
-                const sVal = String(val);
-                return sVal.includes(',') ? `"${sVal}"` : sVal;
-            }).join(','))
-        ];
-        const csvContent = csvRows.join('\n');
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-        link.setAttribute('href', url);
-        link.setAttribute('download', `Attendance_Export_HRMS_${timestamp}.csv`);
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    }
-
     private parseDuration(d: any): number {
         if (!d) return 0;
         const s = String(d).trim();
-        if (s === '' || s === '0' || s.toLowerCase() === 'nan' || s === '00:00' || s === '0:00') return 0;
+        if (s === '' || s === '0' || s.toLowerCase() === 'nan' || s === '00:00') return 0;
         try {
             if (s.includes(':')) {
                 const parts = s.split(':').map(Number);
                 if (parts.length >= 2) return parts[0] + (parts[1] / 60);
             }
-            const num = Number(s);
-            return isNaN(num) ? 0 : num;
+            return isNaN(Number(s)) ? 0 : Number(s);
         } catch { return 0; }
-    }
-
-    // For the Detailed Records Table (bottom of dashboard)
-    get tableData() {
-        return this.filteredData;
-    }
-
-    // For the Admin Edit Mode (Overlay/Modal)
-    get editBoardData() {
-        let d = this.rawData;
-        if (this.editSearchEmpId) {
-            d = d.filter(r => r.EmpID && r.EmpID.toLowerCase().includes(this.editSearchEmpId.toLowerCase()));
-        }
-        if (this.editSearchDate) {
-            d = d.filter(r => r.Date === this.editSearchDate);
-        }
-        // Limit to 50 for performance if no search
-        if (!this.editSearchEmpId && !this.editSearchDate) {
-            return d.slice(0, 50); 
-        }
-        return d;
-    }
-    
-    toggleEditMode() {
-        this.isEditMode = !this.isEditMode;
-    }
-
-    openEditModal(record: any) {
-        // Clone to prevent direct mutation
-        this.editingRecord = { ...record };
-    }
-
-    closeEditModal() {
-        this.editingRecord = null;
-    }
-
-    deleteRecord(id: number) {
-        if (!confirm('Are you sure you want to delete this record/')) return;
-        this.attendanceService.deleteAttendance(id).subscribe({
-            next: () => {
-                this.notificationService.showAlert('Record deleted', 'success');
-                this.attendanceService.fetchAttendance();
-            },
-            error: () => this.notificationService.showAlert('Delete failed', 'error')
-        });
-    }
-
-    saveRecord() {
-        if (!this.editingRecord) return;
-
-        // Sanitize Inputs: Default to 00:00 if empty
-        if (!this.editingRecord.First_In) this.editingRecord.First_In = '00:00';
-        if (!this.editingRecord.Last_Out) this.editingRecord.Last_Out = '00:00';
-        if (!this.editingRecord.In_Duration) this.editingRecord.In_Duration = '00:00';
-        if (!this.editingRecord.Out_Duration) this.editingRecord.Out_Duration = '00:00';
-
-        // Validation Helper
-        const isValidTime = (t: any) => {
-            if (!t) return true; 
-            return /^([0-1]?[0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$/.test(String(t).trim());
-        };
-
-        // Validate Fields
-        if (!isValidTime(this.editingRecord.First_In)) {
-            this.notificationService.showAlert('Invalid First In time. Use HH:MM or HH:MM:SS', 'error');
-            return;
-        }
-        if (!isValidTime(this.editingRecord.Last_Out)) {
-            this.notificationService.showAlert('Invalid Last Out time. Use HH:MM or HH:MM:SS', 'error');
-            return;
-        }
-        if (!isValidTime(this.editingRecord.In_Duration)) {
-            this.notificationService.showAlert('Invalid In Duration. Use HH:MM or HH:MM:SS', 'error');
-            return;
-        }
-        if (!isValidTime(this.editingRecord.Out_Duration)) {
-            this.notificationService.showAlert('Invalid Out Duration. Use HH:MM or HH:MM:SS', 'error');
-            return;
-        }
-
-        this.isSaving = true;
-
-        // Auto-Update Status Logic
-        const fin = this.editingRecord.First_In;
-        const lout = this.editingRecord.Last_Out;
-
-        if (fin === '00:00' && lout === '00:00') {
-            this.editingRecord.Attendance = 'Absent';
-        } else if (fin !== '00:00' && lout !== '00:00') {
-            this.editingRecord.Attendance = 'Present';
-        }
-
-        const payload = {
-            first_in: this.editingRecord.First_In,
-            last_out: this.editingRecord.Last_Out,
-            in_duration: this.editingRecord.In_Duration,
-            out_duration: this.editingRecord.Out_Duration,
-            attendance_status: this.editingRecord.Attendance
-        };
-
-        this.attendanceService.updateAttendance(this.editingRecord.id, payload).subscribe({
-            next: () => {
-                this.notificationService.showAlert('Record updated successfully', 'success');
-                this.isSaving = false;
-                this.closeEditModal();
-                this.attendanceService.fetchAttendance(); // Refresh data
-            },
-            error: (err) => {
-                this.isSaving = false;
-                this.notificationService.showAlert('Failed to update record', 'error');
-            }
-        });
     }
 }

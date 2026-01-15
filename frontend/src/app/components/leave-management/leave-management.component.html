@@ -72,12 +72,7 @@
     <div class="form-card">
       <div class="form-group">
         <label>Leave Type</label>
-        <select [(ngModel)]="newRequest.leave_type_id">
-          <option [ngValue]="null">Select Type</option>
-          <option *ngFor="let t of leaveTypes" [value]="t.id">
-            {{ t.name }}
-          </option>
-        </select>
+        <div class="static-input">Paid Leave</div>
       </div>
       <div class="form-row">
         <div class="form-group">

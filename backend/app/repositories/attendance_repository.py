@@ -35,11 +35,13 @@ class AttendanceRepository:
     
     def get_by_emp_id(self, emp_id: str) -> List[Attendance]:
         """Get all attendance records for an employee"""
-        return self.db.query(Attendance).filter(Attendance.emp_id == emp_id).all()
+        from sqlalchemy.orm import joinedload
+        return self.db.query(Attendance).options(joinedload(Attendance.owner)).filter(Attendance.emp_id == emp_id).all()
     
     def get_all(self) -> List[Attendance]:
         """Get all attendance records"""
-        return self.db.query(Attendance).all()
+        from sqlalchemy.orm import joinedload
+        return self.db.query(Attendance).options(joinedload(Attendance.owner)).all()
     
     def create(self, attendance_data: dict) -> Attendance:
         """

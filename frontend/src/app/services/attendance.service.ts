@@ -6,7 +6,7 @@ import { Observable, Subject, BehaviorSubject } from 'rxjs';
   providedIn: 'root'
 })
 export class AttendanceService {
-  private apiUrl = 'http://192.168.1.106:8000';
+  private apiUrl = 'http://localhost:8000';
 
   // Subjects for in-memory data state
   private typeADataSubject = new BehaviorSubject<any[]>([]);
@@ -82,7 +82,8 @@ export class AttendanceService {
           First_In: d.first_in,
           Last_Out: d.last_out,
           Punch_Records: d.punch_records,
-          Attendance: d.attendance_status
+          Attendance: d.attendance_status,
+          Employee_Name: d.employee_name
         }));
 
         const mappedB = typeB.map(d => ({
@@ -95,7 +96,8 @@ export class AttendanceService {
           First_In: d.first_in,
           Last_Out: d.last_out,
           Punch_Records: d.punch_records,
-          Attendance: d.attendance_status
+          Attendance: d.attendance_status,
+          Employee_Name: d.employee_name
         }));
 
         this.typeADataSubject.next(mappedA);

@@ -78,6 +78,7 @@ class Attendance(Base):
     total_duration = Column(String(100), nullable=True)
     punch_records = Column(String(2000), nullable=True)
     attendance_status = Column(String(50))
+    employee_name = Column(String(200), nullable=True)
     source_file = Column(String(255))
     is_manually_corrected = Column(Boolean, default=False)
     corrected_by = Column(String(100), nullable=True)

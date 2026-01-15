@@ -1,93 +1,120 @@
 # 📊 RBIS HR Management System (HRMS)
 
-RBIS HRMS is a comprehensive, premium management suite designed to modernize workforce coordination and biometric data intelligence. Transformed from a simple dashboard into a full-scale enterprise application, it provides robust employee onboarding, secure authentication, and deep workforce analytics.
+**A Premium Enterprise Workforce Intelligence Suite**
+
+RBIS HRMS is a state-of-the-art, role-based Human Resource Management System designed to streamline attendance tracking, employee operations, and workforce analytics. Built with a focus on data integrity ("Strict ID" enforcement) and user experience (Glassmorphism UI), it serves as a central hub for managing the entire employee lifecycle.
 
 ---
 
-## ✨ Key Features
+## 🌟 Key Features
 
-- **🔐 Enterprise Authentication**: Secure JWT-based login system with mandatory **6-digit OTP verification** for registration and password resets.
-- **📈 Unified Analytics Engine**:
-  - Real-time visualization of attendance trends using Chart.js.
-  - Automatic normalization of complex biometric logs (Type A & Type B formats).
-  - **Cumulative Intelligence**: Dynamic calculation of presence, absence, and average efficiency.
-- **👥 Employee Lifecycle Management**:
-  - Professional onboarding module with automated `RBISXXXX` ID generation.
-  - Secure profile management with dynamic initials-based avatars.
-- **📂 Digital Vault (Records)**: Permanent cloud-agnostic storage for raw biometric logs.
-- **🛡️ Clean Architecture**: Fully refactored backend using **Layered Architecture** (API, Service, Repository) for maximum maintainability and scalability.
-- **💎 Premium UI/UX**: Professional Angular-based interface featuring:
-  - **Interactive Particle Background**: A custom, minimalist tech-stack-themed canvas animation.
-  - **Glassmorphism**: Modern semi-transparent interfaces for a high-end SaaS feel.
-  - **Session Persistence**: Automatic redirection to login on session expiration.
+### 🔐 Role-Based Access Control (RBAC)
 
----
+The system strictly segregates functionality based on user roles, ensuring data security and operational clarity:
 
-## 🏗️ Backend Architecture (v1)
+- **Super Admin**: Full control over all modules, including the exclusive **Operations** console for data ingestion and correction.
+- **HR Manager**: Access to Onboarding, Employee Master, and detailed Analytics for workforce management.
+- **CEO**: High-level overview with access to Records and Organization-wide statistics.
+- **Employee**: Personal dashboard view with self-service leave management and attendance history.
 
-The backend follows **Clean Architecture** principles:
+### 🚀 Core Modules
 
-- **API Layer (`app/api/v1`)**: Thin route handlers using FastAPI.
-- **Service Layer (`app/services`)**: Encapsulated business logic.
-- **Repository Layer (`app/repositories`)**: Abstraction over SQLAlchemy database operations.
-- **Models Layer (`app/models`)**: Domain-led database schemas split by module (Employee, Attendance, Leave, etc.).
+#### 1. 🖥️ Interactive Dashboard
 
----
+- **Real-Time Insight**: Instant visualization of Present, Absent, and On-Leave statistics.
+- **Context-Aware Drilling**: Clickable cards revealing detailed tables for specific statuses.
+- **Individual Focus Mode**: Smart profile isolation—searching for an ID instantly transforms the dashboard into a personal stats hub, hiding organization-wide noise.
+- **Active Profile Header**: Prominent, dynamically placed profile bar for focused individual analysis.
 
-## 🛠️ Tech Stack
+#### 2. 📈 Advanced Analytics
 
-### Backend
+- **Deep Data Mining**: Filter attendance logs by Date Range or specific Employee ID.
+- **Strict Validation**: Enforces standard `RBIS` prefix format for all ID searches to ensure data consistency.
+- **Smart Visibility**: Search capabilities are automatically hidden for standard users, presenting them with a clean, permissible view (Date Range only).
 
-- **FastAPI**: High-performance Python framework.
-- **SQLAlchemy & MS SQL Server**: Enterprise-grade relational data management.
-- **Pandas**: Advanced data cleaning and normalization.
-- **JWT & Passlib**: Secure authentication and password hashing.
-- **SMTPLib**: Integrated OTP email service.
+#### 3. ⚙️ Attendance Operations (Admin Only)
 
-### Frontend
+- **Centralized Console**: A powerful hub for ingesting raw biometric data types (Type A/B).
+- **Correction Console**: An overlay interface for manually correcting attendance anomalies.
+- **Data Export**: One-click export functionalities for processing and reporting.
 
-- **Angular (Latest)**: Professional standalone architecture.
-- **Chart.js**: Dynamic data visualizations.
-- **Custom Canvas Engine**: Interactive background effects.
-- **Modern CSS**: Custom design system with glassmorphism.
-- **Lucide Icons**: Sleek iconography.
+#### 4. 👥 Onboarding & Master Data
+
+- **Streamlined Registration**: simplified "One-Flow" onboarding process.
+- **Validation Gates**: Built-in checks to prevent malformed IDs or duplicate records.
+- **Master Table**: A comprehensive, searchable directory of all workforce members.
+
+#### 5. 📅 Leave Management
+
+- **Self-Service Portal**: Employees can request leaves directly.
+- **Approval Workflow**: HR/Admin approval pipeline for managing leave balances.
 
 ---
 
-## 🚀 Quick Start
+## 🏗️ Technical Architecture
 
-### 1. Backend Configuration
+The application follows a **Clean Architecture** pattern to ensure scalability and maintainability.
 
-1. Navigate to the `backend` directory.
-2. Create a `.env` file based on `.env.example`:
-   ```env
-   DATABASE_URL=mssql+pyodbc://...
-   SECRET_KEY=your_secret_key
-   SMTP_HOST=...
-   SMTP_USER=...
-   ```
-3. Install dependencies and start:
-   ```bash
-   pip install -r requirements.txt
-   python main.py
-   ```
+### 🎨 Frontend (Angular 18+)
+
+- **Standalone Components**: Modular architecture for faster load times.
+- **Reactive State**: RxJS-powered data streams for real-time UI updates.
+- **Premium UI/UX**:
+  - **Glassmorphism**: Modern, semi-transparent aesthetic.
+  - **Lucide Icons**: Professional, consistent iconography.
+  - **Chart.js**: Interactive, responsive data visualizations.
+
+### ⚙️ Backend (Python FastAPI)
+
+- **Layered Design**: Distinct separation of API, Service, and Repository layers.
+- **SQLAlchemy**: Robust ORM for MS SQL Server interactions.
+- **Security**: JWT-based stateless authentication with OTP verification.
+
+---
+
+## 🛠️ Installation & Setup
+
+### Prerequisites
+
+- Node.js (v18+)
+- Python (v3.10+)
+- MS SQL Server
+
+### 1. Backend Setup
+
+```bash
+cd backend
+# Create virtual environment
+python -m venv venv
+# Activate (Windows)
+.\venv\Scripts\activate
+# Install dependencies
+pip install -r requirements.txt
+# Configure .env (see .env.example)
+# Run Server
+uvicorn main:app --reload
+```
 
 ### 2. Frontend Setup
 
-1. Navigate to the `frontend` directory.
-2. Install and launch:
-   ```bash
-   npm install
-   npm start
-   ```
-   _Access at `http://localhost:4200`_
+```bash
+cd frontend
+# Install packages
+npm install
+# Launch Application
+ng serve
+```
+
+_Access the application at `http://localhost:4200`_
 
 ---
 
-## 🌍 Deployment
+## 🔒 Security Standards
 
-For detailed deployment instructions, please refer to the [Deployment Guide](./backend/deployment_guide.md) (or check the project artifacts).
+- **Strict ID Enforcement**: All employee IDs must adhere to the `RBISxxxx` format.
+- **Session Persistence**: Secure, auto-expiring JWT tokens.
+- **Input Sanitization**: Comprehensive validation on all search and input fields.
 
 ---
 
-**Developed with ❤️ for RBIS Tech Pvt Ltd**
+**© 2026 RBIS Tech Pvt Ltd. All Rights Reserved.**

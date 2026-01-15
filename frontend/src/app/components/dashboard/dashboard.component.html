@@ -1,16 +1,4 @@
 <div class="module-view-padding">
-  <div class="admin-top-section" *ngIf="isAdmin">
-    <section class="page-section">
-      <div class="section-header">
-        <div class="header-text">
-          <h2>System Ingestion</h2>
-          <p>Drop multi-format logs to keep the system up to date</p>
-        </div>
-      </div>
-      <app-upload></app-upload>
-    </section>
-  </div>
-
   <div class="no-data-msg" *ngIf="!hasData && !loading">
     <i data-lucide="database"></i>
     <h3>No Records Found</h3>
@@ -19,153 +7,107 @@
 
   <div class="data-view" *ngIf="hasData || loading">
     <div class="dashboard-header">
-      <h2 class="section-title">Attendance Intelligence</h2>
-      <div class="header-actions">
-        <button
-          class="btn-export"
-          (click)="exportToCSV()"
-          title="Download current view as CSV"
-        >
-          <i data-lucide="download"></i> Export Analytics
-        </button>
-        <button
-          class="btn-edit-mode"
-          (click)="toggleEditMode()"
-          *ngIf="isAdmin"
-          title="Manual Correction Mode"
-        >
-          <i data-lucide="pencil"></i> Edit Attendance
-        </button>
-      </div>
+      <h2 class="section-title">Workforce Overview</h2>
     </div>
 
     <!-- Filters Bar -->
     <div class="filter-bar" *ngIf="!loading && hasData">
-      <div class="filter-group">
-        <label><i data-lucide="calendar"></i> Period</label>
-        <select
-          [(ngModel)]="selectedDate"
-          (change)="applyFilters()"
-          [disabled]="!!startDate || !!endDate"
-        >
-          <option value="">
-            {{ !!startDate || !!endDate ? "Range Active" : "All Dates" }}
-          </option>
-          <option *ngFor="let date of availableDates" [value]="date">
-            {{ date }}
-          </option>
-        </select>
+      <div class="filter-group date-range">
+        <label><i data-lucide="calendar"></i> Date Range</label>
+        <div class="range-inputs">
+          <input
+            type="date"
+            [(ngModel)]="fromDate"
+            (change)="applyFilters()"
+            placeholder="From"
+          />
+          <span class="range-sep">to</span>
+          <input
+            type="date"
+            [(ngModel)]="toDate"
+            (change)="applyFilters()"
+            placeholder="To"
+          />
+        </div>
       </div>
-      <div class="filter-group">
-        <label><i data-lucide="calendar-range"></i> From</label>
-        <input
-          type="date"
-          [(ngModel)]="startDate"
-          (change)="applyFilters()"
-          [disabled]="!!selectedDate"
-        />
+
+      <!-- Admin Search Option -->
+      <div class="filter-group search-context" *ngIf="canViewAll">
+        <label><i data-lucide="user-search"></i> Context Search</label>
+        <div class="search-input-wrapper">
+          <input
+            type="text"
+            [(ngModel)]="searchTerm"
+            placeholder="Search Emp ID or Name..."
+            (keyup.enter)="applyFilters()"
+          />
+          <i
+            data-lucide="search"
+            class="search-icon"
+            (click)="applyFilters()"
+            style="cursor: pointer; pointer-events: auto"
+          ></i>
+        </div>
       </div>
-      <div class="filter-group">
-        <label><i data-lucide="calendar-range"></i> To</label>
-        <input
-          type="date"
-          [(ngModel)]="endDate"
-          (change)="applyFilters()"
-          [disabled]="!!selectedDate"
-        />
-      </div>
-      <div class="filter-group" *ngIf="canViewAll">
-        <label><i data-lucide="user"></i> Context</label>
-        <select [(ngModel)]="selectedEmp" (change)="applyFilters()">
-          <option value="">Organization Wide</option>
-          <option *ngFor="let emp of availableEmps" [value]="emp">
-            {{ emp }}
-          </option>
-        </select>
-      </div>
-      <div class="filter-group personal-context" *ngIf="!canViewAll">
-        <label><i data-lucide="user"></i> Context</label>
-        <div class="static-value">Personal Dashboard</div>
-      </div>
+
       <button
         class="reset-btn"
         (click)="resetFilters()"
-        *ngIf="
-          selectedDate || startDate || endDate || (canViewAll && selectedEmp)
-        "
+        *ngIf="fromDate || toDate || searchTerm || (canViewAll && selectedEmp)"
       >
-        Clear Filters
+        Clear
       </button>
     </div>
 
-    <!-- Stats Section -->
-    <div class="stats-grid" *ngIf="!loading && hasData">
+    <div class="active-profile-row" *ngIf="activeEmployee">
+      <div class="profile-info">
+        <div class="avatar-small">{{ activeEmployee.Name[0] }}</div>
+        <div class="text">
+          <span class="p-name">{{ activeEmployee.Name }}</span>
+          <span class="p-id">({{ activeEmployee.EmpID }})</span>
+        </div>
+      </div>
+      <div class="profile-badge">Individual Statistics Dashboard</div>
+    </div>
+
+    <!-- Stats Section (Conditionally Hidden) -->
+    <div class="stats-grid" *ngIf="!loading && hasData && showStatsCards">
       <div class="stat-card clickable" (click)="viewStatusDetails('Present')">
-        <div class="stat-icon"><i data-lucide="users"></i></div>
+        <div class="stat-icon"><i data-lucide="check-circle"></i></div>
         <div class="stat-info">
-          <span class="label">Present ({{ stats.label }})</span>
+          <span class="label">Present Days</span>
           <span class="value">{{ stats.present }}</span>
         </div>
       </div>
       <div class="stat-card clickable" (click)="viewStatusDetails('Absent')">
-        <div class="stat-icon alert"><i data-lucide="user-x"></i></div>
+        <div class="stat-icon alert"><i data-lucide="x-circle"></i></div>
         <div class="stat-info">
-          <span class="label">Absent ({{ stats.label }})</span>
+          <span class="label">Absent Days</span>
           <span class="value">{{ stats.absent }}</span>
         </div>
       </div>
-      <div class="stat-card clickable" (click)="viewStatusDetails('On Leave')">
+      <div
+        class="stat-card clickable"
+        *ngIf="stats.onLeave > 0"
+        (click)="viewStatusDetails('On Leave')"
+      >
         <div class="stat-icon leave"><i data-lucide="calendar-off"></i></div>
         <div class="stat-info">
-          <span class="label">On Leave ({{ stats.label }})</span>
+          <span class="label">On Leave</span>
           <span class="value">{{ stats.onLeave }}</span>
         </div>
       </div>
+
       <div class="stat-card">
-        <div class="stat-icon"><i data-lucide="log-in"></i></div>
+        <div class="stat-icon efficiency"><i data-lucide="zap"></i></div>
         <div class="stat-info">
-          <span class="label">First In</span>
-          <span class="value">{{ stats.firstIn }}</span>
-        </div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon"><i data-lucide="log-out"></i></div>
-        <div class="stat-info">
-          <span class="label">Last Out</span>
-          <span class="value">{{ stats.lastOut }}</span>
-        </div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon trend"><i data-lucide="history"></i></div>
-        <div class="stat-info">
-          <span class="label">In Duration</span>
-          <span class="value">{{ stats.inDuration }}</span>
-        </div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon trend"><i data-lucide="timer"></i></div>
-        <div class="stat-info">
-          <span class="label">Out Duration</span>
-          <span class="value">{{ stats.outDuration }}</span>
-        </div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon trend"><i data-lucide="hourglass"></i></div>
-        <div class="stat-info">
-          <span class="label">Total Office Duration</span>
-          <span class="value">{{ stats.totalDuration }}</span>
-        </div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon trend"><i data-lucide="clock"></i></div>
-        <div class="stat-info">
-          <span class="label">Avg Hours ({{ stats.label }})</span>
+          <span class="label">Avg working hours</span>
           <span class="value">{{ stats.avgHours | number : "1.1-1" }}h</span>
         </div>
       </div>
     </div>
 
-    <!-- Charts Grid -->
+    <!-- Charts Grid (Restored) -->
     <div class="charts-grid" *ngIf="!loading && hasData">
       <div
         class="chart-card"
@@ -204,7 +146,7 @@
       <div class="chart-card" [class.large]="!showTrendChart">
         <div class="chart-header">
           <h3>Status Distribution</h3>
-          <p>Presence vs Absence breakdown ({{ stats.label }})</p>
+          <p>Presence vs Absence breakdown</p>
         </div>
         <div class="chart-box small">
           <canvas
@@ -217,152 +159,7 @@
       </div>
     </div>
 
-    <!-- Edit Mode Overlay (Full Screen or Large Modal) -->
-    <div class="edit-mode-main-overlay" *ngIf="isEditMode">
-      <div class="edit-console-card">
-        <div class="console-header">
-          <div class="h-left">
-            <h3>Attendance Correction Console</h3>
-            <p>Search and modify records directly</p>
-          </div>
-          <button class="close-console" (click)="toggleEditMode()">
-            <i data-lucide="x"></i> Close
-          </button>
-        </div>
-
-        <div class="console-search-bar">
-          <div class="search-input">
-            <label>Enter Emp ID</label>
-            <input
-              type="text"
-              [(ngModel)]="editSearchEmpId"
-              placeholder="e.g. RBIS0010"
-            />
-          </div>
-          <div class="search-input">
-            <label>Enter Date</label>
-            <input type="date" [(ngModel)]="editSearchDate" />
-          </div>
-        </div>
-
-        <div class="console-table-wrapper">
-          <table class="analytics-table">
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>EmpID</th>
-                <th>First In</th>
-                <th>Last Out</th>
-                <th>In Duration</th>
-                <th>Out Duration</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let row of editBoardData">
-                <td>{{ row.Date }}</td>
-                <td>{{ row.EmpID }}</td>
-                <td>{{ row.First_In || "--:--" }}</td>
-                <td>{{ row.Last_Out || "--:--" }}</td>
-                <td>{{ row.In_Duration || "--:--" }}</td>
-                <td>{{ row.Out_Duration || "--:--" }}</td>
-                <td>
-                  <span
-                    class="status-badge"
-                    [class]="row.Attendance | lowercase"
-                    >{{ row.Attendance }}</span
-                  >
-                </td>
-                <td>
-                  <div class="action-buttons-row">
-                    <button
-                      class="btn-icon-edit"
-                      (click)="openEditModal(row)"
-                      title="Edit"
-                    >
-                      <i data-lucide="pencil"></i>
-                    </button>
-                    <button
-                      class="btn-icon-delete"
-                      (click)="deleteRecord(row.id)"
-                      title="Delete"
-                    >
-                      <i data-lucide="trash-2"></i>
-                    </button>
-                  </div>
-                </td>
-              </tr>
-              <tr *ngIf="editBoardData.length === 0">
-                <td colspan="8" class="no-records">
-                  No records found matching search.
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- Edit Modal (Still needed for the actual Form Interaction) -->
-    <div class="modal-overlay" *ngIf="editingRecord">
-      <div class="modal-card">
-        <div class="modal-header">
-          <h3>Manual Correction</h3>
-          <button class="close-btn" (click)="closeEditModal()">&times;</button>
-        </div>
-        <div class="modal-body">
-          <div class="form-group">
-            <label>First In</label>
-            <input
-              type="text"
-              [(ngModel)]="editingRecord.First_In"
-              placeholder="HH:MM:SS"
-            />
-          </div>
-          <div class="form-group">
-            <label>Last Out</label>
-            <input
-              type="text"
-              [(ngModel)]="editingRecord.Last_Out"
-              placeholder="HH:MM:SS"
-            />
-          </div>
-          <div class="form-group">
-            <label>In Duration</label>
-            <input
-              type="text"
-              [(ngModel)]="editingRecord.In_Duration"
-              placeholder="HH:MM:SS"
-            />
-          </div>
-          <div class="form-group">
-            <label>Out Duration</label>
-            <input
-              type="text"
-              [(ngModel)]="editingRecord.Out_Duration"
-              placeholder="HH:MM:SS"
-            />
-          </div>
-          <div class="form-group">
-            <label>Status</label>
-            <select [(ngModel)]="editingRecord.Attendance">
-              <option value="Present">Present</option>
-              <option value="Absent">Absent</option>
-              <option value="On Leave">On Leave</option>
-              <option value="Half Day">Half Day</option>
-            </select>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button class="btn-cancel" (click)="closeEditModal()">Cancel</button>
-          <button class="btn-save" (click)="saveRecord()" [disabled]="isSaving">
-            {{ isSaving ? "Saving..." : "Update Record" }}
-          </button>
-        </div>
-      </div>
-    </div>
-    <!-- Drill Down Modal -->
+    <!-- Drill-down Modal -->
     <div class="modal-overlay" *ngIf="showDrillDown">
       <div class="modal-card larger">
         <div class="modal-header">
@@ -373,24 +170,31 @@
           <table class="analytics-table">
             <thead>
               <tr>
-                <th>Emp ID</th>
-                <th *ngIf="!drillDownList[0]?.hideTimings">First In</th>
-                <th *ngIf="!drillDownList[0]?.hideTimings">Last Out</th>
-                <th *ngIf="!drillDownList[0]?.hideTimings">Duration</th>
+                <th>Date</th>
+                <th>EmpID</th>
+                <th>Employee Name</th>
+                <th>Status</th>
+                <th *ngIf="!hideTimings">In</th>
+                <th *ngIf="!hideTimings">Out</th>
+                <th *ngIf="!hideTimings">Duration</th>
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let item of drillDownList">
-                <td>{{ item.emp_id }}</td>
-                <td *ngIf="!item.hideTimings">{{ item.firstIn }}</td>
-                <td *ngIf="!item.hideTimings">{{ item.lastOut }}</td>
-                <td *ngIf="!item.hideTimings">{{ item.duration }}</td>
+              <tr *ngFor="let emp of drillDownList">
+                <td>{{ emp.Date }}</td>
+                <td>{{ emp.EmpID }}</td>
+                <td class="name-cell">{{ emp.Name }}</td>
+                <td>
+                  <span class="status-badge" [class]="emp.status | lowercase">{{
+                    emp.status
+                  }}</span>
+                </td>
+                <td *ngIf="!hideTimings">{{ emp.in || "--:--" }}</td>
+                <td *ngIf="!hideTimings">{{ emp.out || "--:--" }}</td>
+                <td *ngIf="!hideTimings">{{ emp.duration || "00:00" }}</td>
               </tr>
               <tr *ngIf="drillDownList.length === 0">
-                <td
-                  [attr.colspan]="drillDownList[0]?.hideTimings ? 1 : 4"
-                  class="no-records"
-                >
+                <td [attr.colspan]="hideTimings ? 4 : 7" class="no-records">
                   No employees found in this category.
                 </td>
               </tr>

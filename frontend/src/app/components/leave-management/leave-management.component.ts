@@ -59,7 +59,14 @@ export class LeaveManagementComponent implements OnInit {
   }
 
   loadInitialData(): void {
-    this.leaveService.getLeaveTypes().subscribe(data => this.leaveTypes = data);
+    this.leaveService.getLeaveTypes().subscribe(data => {
+      this.leaveTypes = data;
+      // Auto-select Paid Leave if available
+      const paidLeave = this.leaveTypes.find(t => t.name === 'Paid Leave') || this.leaveTypes[0];
+      if (paidLeave) {
+        this.newRequest.leave_type_id = paidLeave.id;
+      }
+    });
     this.leaveService.getBalances().subscribe(data => this.balances = data);
     this.leaveService.getMyRequests().subscribe(data => this.myRequests = data);
     

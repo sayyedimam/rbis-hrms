@@ -66,6 +66,10 @@ export class OnboardingComponent implements OnInit {
   }
 
   onSubmit() {
+    if (this.employee.emp_id && !this.employee.emp_id.toLowerCase().startsWith('rbis')) {
+        this.notificationService.showAlert('Employee ID should start with "RBIS"', 'info');
+    }
+
     this.loading = true;
     this.attendanceService.onboardEmployee(this.employee).subscribe({
       next: (res) => {
