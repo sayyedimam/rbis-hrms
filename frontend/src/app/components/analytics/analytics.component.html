@@ -1,0 +1,122 @@
+<div class="analytics-container">
+  <div class="analytics-header">
+    <div class="title-group">
+      <h2>Employee Attendance Intelligence</h2>
+      <p>Search by ID, Name, or use a Date Range to view history and trends.</p>
+    </div>
+  </div>
+
+  <!-- Search Bar Section -->
+  <div class="search-section">
+    <div class="search-box">
+      <div class="input-main" *ngIf="canViewAll">
+        <i data-lucide="search"></i>
+        <input
+          type="text"
+          [(ngModel)]="searchTerm"
+          placeholder="Enter Employee ID (eg: RBIS0059) or Name"
+          (keyup.enter)="performSearch()"
+        />
+      </div>
+      <div class="input-range">
+        <div class="date-group">
+          <label>From</label>
+          <input type="date" [(ngModel)]="startDate" />
+        </div>
+        <div class="date-group">
+          <label>To</label>
+          <input type="date" [(ngModel)]="endDate" />
+        </div>
+      </div>
+      <button
+        class="btn-search"
+        (click)="performSearch()"
+        [disabled]="loading"
+        title="Run Search Analysis"
+        *ngIf="canViewAll"
+      >
+        <i data-lucide="search" *ngIf="!loading"></i>
+        <span class="spinner-small" *ngIf="loading"></span>
+      </button>
+      <button class="btn-clear" (click)="clearSearch()" *ngIf="searchPerformed">
+        Clear
+      </button>
+    </div>
+  </div>
+
+  <!-- Results View -->
+  <div class="results-view" *ngIf="searchPerformed && !loading">
+    <!-- Employee Summary Card -->
+    <div class="emp-summary-card" *ngIf="employeeStats">
+      <div class="emp-identity">
+        <div class="avatar-large">{{ employeeStats.name[0] }}</div>
+        <div class="info">
+          <h3>{{ employeeStats.name }}</h3>
+          <span class="badge-id">{{ employeeStats.id }}</span>
+        </div>
+      </div>
+      <div class="quick-stats">
+        <div class="stat-mini">
+          <span class="val">{{ employeeStats.present }}</span>
+          <span class="lbl">Present</span>
+        </div>
+        <div class="stat-mini">
+          <span class="val">{{ employeeStats.absent }}</span>
+          <span class="lbl">Absent</span>
+        </div>
+        <div class="stat-mini">
+          <span class="val">{{ employeeStats.leave }}</span>
+          <span class="lbl">On Leave</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Attendance Table -->
+    <div class="table-container" *ngIf="attendanceHistory.length > 0">
+      <table class="history-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Employee Name</th>
+            <th>First In</th>
+            <th>Last Out</th>
+            <th>Office Duration</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let row of attendanceHistory">
+            <td>{{ row.Date }}</td>
+            <td class="name-cell">{{ row.Employee_Name || "--" }}</td>
+            <td>{{ row.First_In || "--:--" }}</td>
+            <td>{{ row.Last_Out || "--:--" }}</td>
+            <td>{{ row.Total_Duration || "--:--" }}</td>
+            <td>
+              <span class="status-badge" [class]="row.Attendance | lowercase">
+                {{ row.Attendance }}
+              </span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- No Results State -->
+    <div class="no-results" *ngIf="attendanceHistory.length === 0">
+      <i data-lucide="info"></i>
+      <p>No records found for the given criteria.</p>
+    </div>
+  </div>
+
+  <!-- Empty State (Before search) -->
+  <div class="empty-state" *ngIf="!searchPerformed && !loading">
+    <div class="empty-content">
+      <i data-lucide="user-search"></i>
+      <h3>Knowledge Search</h3>
+      <p>
+        Enter an employee's details above to reveal their attendance history and
+        performance metrics.
+      </p>
+    </div>
+  </div>
+</div>

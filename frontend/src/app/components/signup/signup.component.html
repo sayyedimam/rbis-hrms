@@ -1,0 +1,149 @@
+<div class="auth-container">
+  <app-particle-bg></app-particle-bg>
+  <div class="auth-card">
+    <div class="auth-header">
+      <div class="logo">
+        <i data-lucide="user-plus"></i>
+        <span>RBIS Tech Pvt Ltd</span>
+      </div>
+      <h1>Create Account</h1>
+      <p>Enroll as an employee to track your details</p>
+    </div>
+
+    <!-- Step 1: Credentials -->
+    <form
+      *ngIf="!isVerificationStep"
+      (ngSubmit)="onSignupRequest()"
+      #signupForm="ngForm"
+    >
+      <div class="form-group">
+        <label for="email">Office Email</label>
+        <div class="input-wrapper">
+          <i data-lucide="mail"></i>
+          <input
+            type="email"
+            id="email"
+            name="email"
+            [(ngModel)]="signupData.email"
+            placeholder="email@office.com"
+            required
+            email
+            #email="ngModel"
+          />
+        </div>
+        <div *ngIf="email.invalid && email.touched" class="field-error">
+          Valid office email required
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="password">Create Password</label>
+        <div class="input-wrapper">
+          <i data-lucide="lock"></i>
+          <input
+            type="password"
+            id="password"
+            name="password"
+            [(ngModel)]="signupData.password"
+            placeholder="••••••••"
+            required
+            minlength="6"
+          />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="confirmPassword">Confirm Password</label>
+        <div class="input-wrapper">
+          <i data-lucide="shield-check"></i>
+          <input
+            type="password"
+            id="confirmPassword"
+            name="confirmPassword"
+            [(ngModel)]="signupData.confirmPassword"
+            placeholder="••••••••"
+            required
+          />
+        </div>
+      </div>
+
+      <div *ngIf="error" class="error-msg">
+        <i data-lucide="alert-circle"></i>
+        {{ error }}
+      </div>
+
+      <button
+        type="submit"
+        [disabled]="!signupForm.valid || loading"
+        class="btn-primary"
+      >
+        <span *ngIf="!loading">Send OTP</span>
+        <span *ngIf="loading">Sending...</span>
+        <i data-lucide="mail" *ngIf="!loading"></i>
+      </button>
+
+      <div class="auth-footer">
+        Already registered? <a routerLink="/login">Login Here</a>
+      </div>
+    </form>
+
+    <!-- Step 2: Verification -->
+    <form
+      *ngIf="isVerificationStep"
+      (ngSubmit)="onVerify()"
+      #verifyForm="ngForm"
+    >
+      <div class="verification-notice">
+        <i data-lucide="shield-check"></i>
+        <p>
+          A 6-digit OTP has been sent to your email
+          <strong>{{ verificationData.email }}</strong>
+        </p>
+      </div>
+
+      <div class="form-group">
+        <label for="code">Enter 6-Digit Code</label>
+        <div class="input-wrapper">
+          <i data-lucide="key"></i>
+          <input
+            type="text"
+            id="code"
+            name="code"
+            [(ngModel)]="verificationData.code"
+            placeholder="123456"
+            required
+            pattern="^[0-9]{6}$"
+            #code="ngModel"
+          />
+        </div>
+        <div *ngIf="code.invalid && code.touched" class="field-error">
+          Please enter the 6-digit code
+        </div>
+      </div>
+
+      <div *ngIf="error" class="error-msg">
+        <i data-lucide="alert-circle"></i>
+        {{ error }}
+      </div>
+
+      <button
+        type="submit"
+        [disabled]="!verifyForm.valid || loading"
+        class="btn-primary"
+      >
+        <span *ngIf="!loading">Verify & Complete Signup</span>
+        <span *ngIf="loading">Verifying...</span>
+        <i data-lucide="check-circle" *ngIf="!loading"></i>
+      </button>
+
+      <div class="auth-footer">
+        Didn't get a code?
+        <a
+          (click)="onSignupRequest()"
+          style="cursor: pointer; color: var(--primary)"
+          >Resend</a
+        >
+      </div>
+    </form>
+  </div>
+</div>

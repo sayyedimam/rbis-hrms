@@ -1,0 +1,125 @@
+<div class="management-container">
+  <div class="header-section">
+    <div class="title-group">
+      <h2>Employee Master Management</h2>
+      <p>View, edit, or remove employee records from the system.</p>
+    </div>
+    <div class="search-box">
+      <i data-lucide="search"></i>
+      <input
+        type="text"
+        [(ngModel)]="searchTerm"
+        (ngModelChange)="filterEmployees()"
+        placeholder="Search by name, ID..."
+      />
+    </div>
+  </div>
+
+  <div class="table-card">
+    <table class="employee-table">
+      <thead>
+        <tr>
+          <th>Emp ID</th>
+          <th>Name</th>
+          <th class="mobile-hide">Email</th>
+          <th>Phone</th>
+          <th class="mobile-hide">Designation</th>
+          <th *ngIf="canEdit">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let emp of filteredEmployees">
+          <td>
+            <ng-container *ngIf="editingEmployee?.id !== emp.id">
+              <span class="badge-id">{{ emp.emp_id }}</span>
+            </ng-container>
+            <input
+              *ngIf="editingEmployee?.id === emp.id"
+              [(ngModel)]="editingEmployee.emp_id"
+              class="edit-input"
+            />
+          </td>
+          <td>
+            <ng-container *ngIf="editingEmployee?.id !== emp.id">
+              {{ emp.full_name }}
+            </ng-container>
+            <input
+              *ngIf="editingEmployee?.id === emp.id"
+              [(ngModel)]="editingEmployee.full_name"
+              class="edit-input"
+            />
+          </td>
+          <td class="mobile-hide">
+            <ng-container *ngIf="editingEmployee?.id !== emp.id">
+              {{ emp.email }}
+            </ng-container>
+            <input
+              *ngIf="editingEmployee?.id === emp.id"
+              [(ngModel)]="editingEmployee.email"
+              class="edit-input"
+            />
+          </td>
+          <td>
+            <ng-container *ngIf="editingEmployee?.id !== emp.id">
+              {{ emp.phone_number }}
+            </ng-container>
+            <input
+              *ngIf="editingEmployee?.id === emp.id"
+              [(ngModel)]="editingEmployee.phone_number"
+              class="edit-input"
+            />
+          </td>
+          <td class="mobile-hide">
+            <ng-container *ngIf="editingEmployee?.id !== emp.id">
+              <span class="designation-cell">{{ emp.designation }}</span>
+            </ng-container>
+            <input
+              *ngIf="editingEmployee?.id === emp.id"
+              [(ngModel)]="editingEmployee.designation"
+              class="edit-input"
+            />
+          </td>
+          <td class="actions-cell" *ngIf="canEdit">
+            <div class="action-buttons" *ngIf="editingEmployee?.id !== emp.id">
+              <button
+                class="btn-icon edit"
+                (click)="editEmployee(emp)"
+                title="Edit"
+              >
+                <i data-lucide="pencil"></i>
+              </button>
+              <button
+                class="btn-icon delete"
+                (click)="deleteEmployee(emp.id)"
+                title="Delete"
+              >
+                <i data-lucide="trash-2"></i>
+              </button>
+            </div>
+            <div class="action-buttons" *ngIf="editingEmployee?.id === emp.id">
+              <button
+                class="btn-icon save"
+                (click)="saveEmployee()"
+                title="Save"
+              >
+                <i data-lucide="check-circle"></i>
+              </button>
+              <button
+                class="btn-icon cancel"
+                (click)="cancelEdit()"
+                title="Cancel"
+              >
+                <i data-lucide="x-circle"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="empty-state" *ngIf="filteredEmployees.length === 0">
+      <i class="lucide-users"></i>
+      <p>No employees found matching your search.</p>
+    </div>
+  </div>
+</div>
