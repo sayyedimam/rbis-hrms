@@ -5,8 +5,9 @@
 *.env
 
 # Python
-*.pyc
 __pycache__/
+*.pyc
+*.pyo
 *.py[cod]
 *$py.class
 *.so
