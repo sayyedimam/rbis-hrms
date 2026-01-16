@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
 import { NotificationService } from '../../services/notification.service';
+import { LeaveService } from '../../services/leave.service';
 
 @Component({
   selector: 'app-analytics',
@@ -26,10 +27,13 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
   private rawData: any[] = [];
   private subs = new Subscription();
 
+  holidays: any[] = [];
+
   constructor(
     private attendanceService: AttendanceService,
     private authService: AuthService,
-    private notificationService: NotificationService
+    private notificationService: NotificationService,
+    private leaveService: LeaveService
   ) {}
 
   canViewAll = false;
@@ -37,6 +41,13 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
   ngOnInit() {
     const role = this.authService.currentUser?.role;
     this.canViewAll = role === 'SUPER_ADMIN' || role === 'HR' || role === 'CEO';
+
+    // Fetch holidays first or in parallel
+    this.leaveService.getHolidays().subscribe(data => {
+        this.holidays = data;
+        // Trigger sync if data already exists, otherwise wait for subscription
+        if (this.attendanceService.typeAData.length > 0) this.syncData();
+    });
 
     this.attendanceService.fetchAttendance();
     this.subs.add(this.attendanceService.typeAData$.subscribe(() => this.syncData()));
@@ -65,9 +76,14 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
       }
     });
     this.rawData = Array.from(mergeMap.values()).filter((rec: any) => {
+      const dateStr = String(rec.Date).split('T')[0];
       const date = new Date(rec.Date);
-      if (date.getDay() === 0) { // 0 is Sunday
-        return rec.Attendance === 'Present';
+      
+      const isSunday = date.getDay() === 0;
+      const isHoliday = this.holidays.some(h => h.date === dateStr);
+
+      if ((isSunday || isHoliday) && rec.Attendance !== 'Present') {
+        return false; // Hide absent on Sunday or Holiday
       }
       return true;
     });

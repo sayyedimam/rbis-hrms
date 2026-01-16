@@ -8,6 +8,7 @@ import { Subscription } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
 import { RouterModule } from '@angular/router';
 import { NotificationService } from '../../services/notification.service';
+import { LeaveService } from '../../services/leave.service';
 
 Chart.register(...registerables);
 
@@ -120,11 +121,13 @@ export class DashboardComponent implements OnInit, OnDestroy {
     };
 
     private dailyChartStats: any[] = [];
+    holidays: any[] = [];
 
     constructor(
         private attendanceService: AttendanceService,
         public authService: AuthService,
-        private notificationService: NotificationService
+        private notificationService: NotificationService,
+        private leaveService: LeaveService
     ) { }
 
     ngOnInit() {
@@ -136,6 +139,12 @@ export class DashboardComponent implements OnInit, OnDestroy {
         if (!this.canViewAll && user) {
             this.selectedEmp = user.emp_id;
         }
+
+        // Fetch Holidays
+        this.leaveService.getHolidays().subscribe(data => {
+            this.holidays = data;
+             if (this.attendanceService.typeAData.length > 0) this.syncData();
+        });
 
         this.attendanceService.fetchAttendance();
 
@@ -175,9 +184,14 @@ export class DashboardComponent implements OnInit, OnDestroy {
         });
 
         this.rawData = Array.from(mergeMap.values()).filter((rec: any) => {
+            const dateStr = String(rec.Date).split('T')[0];
             const date = new Date(rec.Date);
-            if (date.getDay() === 0) { // 0 is Sunday
-                return rec.Attendance === 'Present';
+            
+            const isSunday = date.getDay() === 0;
+            const isHoliday = this.holidays.some(h => h.date === dateStr);
+
+            if ((isSunday || isHoliday) && rec.Attendance !== 'Present') {
+                return false; 
             }
             return true;
         });

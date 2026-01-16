@@ -85,6 +85,17 @@
       >
         <i data-lucide="calendar"></i> Leaves
       </a>
+      <a routerLink="/notices" routerLinkActive="active" class="nav-item">
+        <i data-lucide="bell"></i> Notices
+      </a>
+      <a
+        routerLink="/admin/notices"
+        routerLinkActive="active"
+        class="nav-item"
+        *ngIf="isHr"
+      >
+        <i data-lucide="megaphone"></i> Notice Mgmt
+      </a>
     </div>
   </nav>
 

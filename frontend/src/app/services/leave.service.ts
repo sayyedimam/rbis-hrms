@@ -18,6 +18,11 @@ export class LeaveService {
     return this.http.get<any[]>(`${this.apiUrl}/balances`);
   }
 
+  getHolidays(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/holidays`);
+  }
+
+
   applyLeave(data: any): Observable<any> {
     return this.http.post(`${this.apiUrl}/apply`, data);
   }

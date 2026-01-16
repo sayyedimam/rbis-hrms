@@ -37,6 +37,21 @@ class ApprovalAction(BaseModel):
     action: str  # APPROVE or REJECT
     remarks: Optional[str] = None
 
+# --- Holiday Endpoints ---
+
+@router.get("/holidays", tags=["General"])
+def get_holidays(
+    year: int = 2026,
+    db: Session = Depends(get_db)
+):
+    """
+    Get list of holidays
+    """
+    from app.models.leave import Holiday
+    holidays = db.query(Holiday).filter(Holiday.year == year).order_by(Holiday.date).all()
+    return holidays
+
+
 # --- Leave Type Endpoints ---
 
 @router.post("/types", tags=["Admin/HR"])

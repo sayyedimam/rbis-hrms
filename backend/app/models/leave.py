@@ -54,3 +54,13 @@ class LeaveApprovalLog(Base):
     action = Column(String(20))  # HR_APPROVED, CEO_APPROVED, REJECTED
     remarks = Column(String(500), nullable=True)
     action_at = Column(DateTime, default=get_ist_now)
+
+class Holiday(Base):
+    """Holiday model - list of public holidays"""
+    __tablename__ = "holidays"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(100), nullable=False)
+    date = Column(Date, nullable=False, unique=True)
+    year = Column(Integer, nullable=False)
+    day = Column(String(20), nullable=True) # e.g. "Monday"

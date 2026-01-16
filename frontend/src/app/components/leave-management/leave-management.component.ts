@@ -40,12 +40,30 @@ export class LeaveManagementComponent implements OnInit {
   // UI State
   expandedRequestId: number | null = null;
   expandedExplorerId: number | null = null;
+  
+  // Holidays
+  showHolidayModal = false;
+  holidays: any[] = [];
 
   constructor(
     private leaveService: LeaveService,
     private authService: AuthService,
     private notificationService: NotificationService
   ) {}
+
+  toggleHolidayModal() {
+    this.showHolidayModal = !this.showHolidayModal;
+    if (this.showHolidayModal && this.holidays.length === 0) {
+      this.loadHolidays();
+    }
+  }
+
+  loadHolidays() {
+    this.leaveService.getHolidays().subscribe({
+      next: (data) => this.holidays = data,
+      error: (err) => console.error('Failed to load holidays', err)
+    });
+  }
 
   ngOnInit(): void {
     const role = this.authService.getUserRole();
