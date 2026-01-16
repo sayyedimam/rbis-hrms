@@ -60,10 +60,17 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
         const existing = mergeMap.get(key);
         existing.In_Duration = existing.In_Duration || rec.In_Duration;
         existing.Out_Duration = existing.Out_Duration || rec.Out_Duration;
+        existing.Total_Duration = existing.Total_Duration || rec.Total_Duration;
         if (rec.Attendance === 'Present') existing.Attendance = 'Present';
       }
     });
-    this.rawData = Array.from(mergeMap.values());
+    this.rawData = Array.from(mergeMap.values()).filter((rec: any) => {
+      const date = new Date(rec.Date);
+      if (date.getDay() === 0) { // 0 is Sunday
+        return rec.Attendance === 'Present';
+      }
+      return true;
+    });
     if (this.searchPerformed) {
        this.performSearch(); // Refresh results if data updates
     }

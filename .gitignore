@@ -81,7 +81,7 @@ logs/
 *.tmp
 *.temp
 .tmp/
-
+test_sql.sql
 # Azure specific
 .azure/
 azure-pipelines.yml

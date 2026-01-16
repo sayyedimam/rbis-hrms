@@ -174,7 +174,13 @@ export class DashboardComponent implements OnInit, OnDestroy {
             }
         });
 
-        this.rawData = Array.from(mergeMap.values());
+        this.rawData = Array.from(mergeMap.values()).filter((rec: any) => {
+            const date = new Date(rec.Date);
+            if (date.getDay() === 0) { // 0 is Sunday
+                return rec.Attendance === 'Present';
+            }
+            return true;
+        });
         this.updateFilterOptions();
         this.applyFilters();
     }

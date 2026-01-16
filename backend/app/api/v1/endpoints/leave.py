@@ -40,7 +40,7 @@ class ApprovalAction(BaseModel):
 # --- Leave Type Endpoints ---
 
 @router.post("/types", tags=["Admin/HR"])
-async def create_leave_type(
+def create_leave_type(
     data: LeaveTypeCreate,
     hr: Employee = Depends(check_hr),
     db: Session = Depends(get_db)
@@ -56,7 +56,7 @@ async def create_leave_type(
     return service.create_leave_type(data.dict())
 
 @router.get("/types")
-async def get_leave_types(
+def get_leave_types(
     user: Employee = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -72,7 +72,7 @@ async def get_leave_types(
 # --- Leave Balance Endpoints ---
 
 @router.get("/balances")
-async def get_my_balances(
+def get_my_balances(
     user: Employee = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -89,7 +89,7 @@ async def get_my_balances(
 # --- Leave Application Endpoints ---
 
 @router.post("/apply")
-async def apply_leave(
+def apply_leave(
     data: LeaveApplyRequest,
     user: Employee = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -106,7 +106,7 @@ async def apply_leave(
     return service.apply_leave(user, data.dict())
 
 @router.get("/my-requests")
-async def get_my_requests(
+def get_my_requests(
     user: Employee = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -122,7 +122,7 @@ async def get_my_requests(
 # --- HR Approval Endpoints ---
 
 @router.get("/hr/pending", tags=["HR"])
-async def get_hr_pending(
+def get_hr_pending(
     hr: Employee = Depends(check_hr),
     db: Session = Depends(get_db)
 ):
@@ -136,7 +136,7 @@ async def get_hr_pending(
     return service.get_pending_requests_for_hr()
 
 @router.post("/approve-hr", tags=["HR"])
-async def approve_by_hr(
+def approve_by_hr(
     data: ApprovalAction,
     hr: Employee = Depends(check_hr),
     db: Session = Depends(get_db)
@@ -155,7 +155,7 @@ async def approve_by_hr(
 # --- CEO Approval Endpoints ---
 
 @router.get("/ceo/pending", tags=["CEO"])
-async def get_ceo_pending(
+def get_ceo_pending(
     ceo: Employee = Depends(check_ceo),
     db: Session = Depends(get_db)
 ):
@@ -169,7 +169,7 @@ async def get_ceo_pending(
     return service.get_pending_requests_for_ceo()
 
 @router.post("/approve-ceo", tags=["CEO"])
-async def approve_by_ceo(
+def approve_by_ceo(
     data: ApprovalAction,
     ceo: Employee = Depends(check_ceo),
     db: Session = Depends(get_db)
@@ -188,7 +188,7 @@ async def approve_by_ceo(
 # --- Admin/HR Specific Endpoints ---
 
 @router.get("/admin/summary", tags=["Admin/HR"])
-async def get_general_leave_summary(
+def get_general_leave_summary(
     admin: Employee = Depends(check_hr),
     db: Session = Depends(get_db)
 ):
@@ -200,7 +200,7 @@ async def get_general_leave_summary(
     return service.get_employee_summary()
 
 @router.get("/admin/employee-summary/{emp_id}", tags=["Admin/HR"])
-async def get_employee_leave_summary(
+def get_employee_leave_summary(
     emp_id: str,
     admin: Employee = Depends(check_hr),
     db: Session = Depends(get_db)

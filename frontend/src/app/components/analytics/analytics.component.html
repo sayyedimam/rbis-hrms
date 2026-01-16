@@ -80,7 +80,8 @@
             <th>Employee Name</th>
             <th>First In</th>
             <th>Last Out</th>
-            <th>Office Duration</th>
+            <th>In Duration</th>
+            <th>Total Duration</th>
             <th>Status</th>
           </tr>
         </thead>
@@ -90,6 +91,7 @@
             <td class="name-cell">{{ row.Employee_Name || "--" }}</td>
             <td>{{ row.First_In || "--:--" }}</td>
             <td>{{ row.Last_Out || "--:--" }}</td>
+            <td>{{ row.In_Duration || "--:--" }}</td>
             <td>{{ row.Total_Duration || "--:--" }}</td>
             <td>
               <span class="status-badge" [class]="row.Attendance | lowercase">

@@ -23,7 +23,7 @@ class OnboardingData(BaseModel):
     email: str
 
 @router.get("/next-id")
-async def get_next_employee_id(
+def get_next_employee_id(
     hr: Employee = Depends(check_hr),
     db: Session = Depends(get_db)
 ):
@@ -59,7 +59,7 @@ async def get_next_employee_id(
     return {"next_id": next_id}
 
 @router.get("/pending")
-async def get_pending_onboarding(
+def get_pending_onboarding(
     hr: Employee = Depends(check_hr),
     db: Session = Depends(get_db)
 ):
@@ -76,7 +76,7 @@ async def get_pending_onboarding(
 
 @router.post("/complete/{email}")
 @router.post("/onboard") # Alias for frontend call
-async def complete_onboarding(
+def complete_onboarding(
     data: OnboardingData,
     email: str = None, # Make email optional if using /onboard with data
     hr: Employee = Depends(check_hr),
@@ -93,12 +93,42 @@ async def complete_onboarding(
     
     # If using /onboard, email might be in data? Let's check frontend.
     # Frontend sends full employee object.
-    target_email = email or data.email
+    target_email = email or data.email.lower()
+    
+    # Check for existing employee by email
     employee = repo.get_by_email(target_email)
     
+    if employee:
+        # CRITICAL: Prevent overwriting ACTIVE employees
+        if employee.status == UserStatus.ACTIVE:
+            # Try alternate email format: first_name.last_name@rbistech.com
+            alt_email = f"{data.first_name}.{data.last_name}@rbistech.com".lower()
+            
+            # If alternate is same as original (rare but possible), it's a hard conflict
+            if alt_email == target_email:
+                 raise HTTPException(
+                    status_code=400,
+                    detail=f"Email {target_email} already exists and is active. Please use a different email."
+                )
+            
+            # Check if alternate email is also taken
+            conflict_check = repo.get_by_email(alt_email)
+            if conflict_check:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Both primary ({target_email}) and alternate ({alt_email}) emails are already taken."
+                )
+            
+            # Switch to alternate email
+            target_email = alt_email
+            data.email = alt_email # Update input data
+            employee = None # Treat as NEW employee
+        # If employee is PENDING, we proceed to update (valid onboarding flow)
+
     if not employee:
         # Create new employee if they don't exist
         employee_data = data.dict()
+        employee_data["email"] = target_email # Ensure email is set
         employee_data["status"] = UserStatus.PENDING # Initial status
         employee = repo.create(employee_data)
     
