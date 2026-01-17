@@ -1,0 +1,70 @@
+<div class="universal-upload-container">
+  <div class="upload-main-card">
+    <div class="upload-header">
+      <div class="header-icon">
+        <i data-lucide="upload-cloud"></i>
+      </div>
+      <div class="header-text">
+        <h3>System Ingestion</h3>
+        <p>Drop multi-format logs to keep the system up to date</p>
+      </div>
+    </div>
+
+    <div
+      class="drop-zone"
+      [class.dragging]="isDragging"
+      (dragover)="onDragOver($event)"
+      (dragleave)="onDragLeave($event)"
+      (drop)="onDrop($event)"
+      (click)="fileInput.click()"
+    >
+      <div class="drop-zone-content">
+        <div class="illustration">
+          <i data-lucide="file-up"></i>
+        </div>
+        <div class="upload-actions">
+          <button class="btn-browse">Browse Files</button>
+          <p class="drop-hint">or drag and drop here</p>
+        </div>
+        <input
+          type="file"
+          #fileInput
+          (change)="onFilesSelected($event)"
+          hidden
+          multiple
+          accept=".csv, .xls, .xlsx"
+        />
+      </div>
+    </div>
+
+    <!-- Upload Progress -->
+    <div class="upload-progress" *ngIf="uploading">
+      <div class="loader-ring"></div>
+      <div class="status-msg">
+        <h4>Analyzing workforce data...</h4>
+        <p>Performing deep scan and mapping</p>
+      </div>
+    </div>
+
+    <!-- Result Feed -->
+    <div class="results-feed" *ngIf="results.length > 0 && !uploading">
+      <div
+        class="result-item"
+        *ngFor="let res of results"
+        [class.success]="res.status === 'success'"
+        [class.error]="res.status === 'error'"
+      >
+        <i
+          [attr.data-lucide]="
+            res.status === 'success' ? 'check-circle' : 'alert-circle'
+          "
+        ></i>
+        <div class="res-info">
+          <span class="filename">{{ res.filename }}</span>
+          <span class="details">{{ res.message }}</span>
+        </div>
+        <span class="type-badge" *ngIf="res.type">{{ res.type }}</span>
+      </div>
+    </div>
+  </div>
+</div>

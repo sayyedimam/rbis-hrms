@@ -1,0 +1,42 @@
+<div class="module-view-padding">
+  <section class="page-section" *ngIf="!loading; else loader">
+    <div class="profile-card">
+      <div class="profile-header">
+        <div class="large-avatar">
+          <i data-lucide="user"></i>
+        </div>
+        <div class="header-info">
+          <h2>{{ profile.full_name }}</h2>
+          <span class="designation">{{ profile.designation }}</span>
+          <span class="id-badge">{{ profile.emp_id }}</span>
+        </div>
+      </div>
+
+      <div class="profile-details">
+        <div class="detail-group">
+          <label>Office Email</label>
+          <p>{{ profile.email }}</p>
+        </div>
+        <div class="detail-group">
+          <label>Phone Number</label>
+          <p>{{ profile.phone_number }}</p>
+        </div>
+        <div class="detail-group">
+          <label>System Role</label>
+          <p>{{ profile.role }}</p>
+        </div>
+        <div class="detail-group">
+          <label>Member Since</label>
+          <p>{{ profile.joined_at | date : "longDate" }}</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <ng-template #loader>
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <p>Loading your profile...</p>
+    </div>
+  </ng-template>
+</div>

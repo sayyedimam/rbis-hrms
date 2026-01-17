@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Implementation Plan - Attendance System (Refined)</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --secondary: #64748b;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #1e293b;
+            --border: #e2e8f0;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            margin: 0;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 850px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 60px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            border: 1px solid var(--border);
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            color: var(--primary);
+            margin-bottom: 30px;
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 10px;
+        }
+
+        h2 {
+            font-size: 1.8rem;
+            margin-top: 40px;
+            color: #0f172a;
+            border-left: 4px solid var(--primary);
+            padding-left: 15px;
+        }
+
+        h3 {
+            font-size: 1.4rem;
+            margin-top: 25px;
+            color: #334155;
+        }
+
+        p, li {
+            font-size: 1.1rem;
+            color: #475569;
+        }
+
+        code {
+            background-color: #f1f5f9;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            font-size: 0.9em;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th {
+            background-color: #f1f5f9;
+            color: #1e293b;
+        }
+
+        .highlight {
+            background-color: #fff7ed;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #fdba74;
+            margin: 20px 0;
+        }
+
+        .print-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        @media print {
+            .print-btn { display: none; }
+            body { padding: 0; background: white; }
+            .container { box-shadow: none; border: none; width: 100%; max-width: none; padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+    <button class="print-btn" onclick="window.print()">Print/Download PDF</button>
+    <div class="container">
+        <h1>Biometric Attendance System - Production-Ready Architecture (Refined)</h1>
+
+        <p>This document has been updated based on your specific feedback regarding the database and authentication requirements.</p>
+
+        <h2>🏗️ High-Level System Architecture</h2>
+        <p>The system is designed for a localized deployment with future cloud scalability.</p>
+        
+        <div style="background: #f1f5f9; padding: 20px; border-radius: 8px; font-family: monospace; white-space: pre;">
+            [Angular Frontend] -> [FastAPI Backend] -> [Microsoft SQL Server]
+        </div>
+
+        <h3>Key Decisions</h3>
+        <ul>
+            <li><strong>Database</strong>: Microsoft SQL Server (via SSMS setup).</li>
+            <li><strong>Deployment</strong>: Hosted on Local Office PC (currently), Cloud-ready (Future).</li>
+            <li><strong>EmpID Format</strong>: Padded string format (e.g., "0001", "0046") preserved across all tables.</li>
+        </ul>
+
+        <hr>
+
+        <h2>🔐 Refined Authentication & Access</h2>
+
+        <div class="highlight">
+            <strong>Custom 3-Field Login:</strong> To enhance identity verification, users will log in using:
+            <ol>
+                <li><strong>EmpID</strong> (e.g., 0001)</li>
+                <li><strong>Username</strong></li>
+                <li><strong>Password</strong></li>
+            </ol>
+        </div>
+
+        <h3>Enrollment Flow</h3>
+        <ul>
+            <li><strong>Employee Sign-Up</strong>: Employees can register themselves. `EmpID` is a mandatory field.</li>
+            <li><strong>Validation</strong>: The system checks if the `EmpID` exists and hasn't been registered yet.</li>
+            <li><strong>Role Management</strong>: Super Admin creates and authorizes HR Users.</li>
+        </ul>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Role</th>
+                    <th>Permissions</th>
+                    <th>Data Scope</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Super Admin</strong></td>
+                    <td>Full CRUD, User Mgmt, Upload</td>
+                    <td>Company-wide</td>
+                </tr>
+                <tr>
+                    <td><strong>HR User</strong></td>
+                    <td>View, Reports, Stats</td>
+                    <td>Company-wide</td>
+                </tr>
+                <tr>
+                    <td><strong>Employee</strong></td>
+                    <td>View Self Only</td>
+                    <td>Own records only</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <hr>
+
+        <h2>🗄️ Database Schema (MySQL)</h2>
+
+        <h3>1. Employees Table</h3>
+        <ul>
+            <li><code>id</code> (PK, Auto-inc)</li>
+            <li><code>emp_id</code> (VARCHAR, Unique) - e.g., "0001"</li>
+            <li><code>username</code> (VARCHAR)</li>
+            <li><code>password_hash</code> (VARCHAR)</li>
+            <li><code>role</code> (ENUM: 'ADMIN', 'HR', 'EMPLOYEE')</li>
+            <li><code>status</code> (ENUM: 'ACTIVE', 'INACTIVE')</li>
+        </ul>
+
+        <h3>2. Attendance Table</h3>
+        <ul>
+            <li><code>id</code> (PK)</li>
+            <li><code>emp_id</code> (FK)</li>
+            <li><code>date</code> (DATE)</li>
+            <li><code>first_in</code>, <code>last_out</code> (TIME)</li>
+            <li><code>total_duration</code> (DECIMAL/INTERVAL)</li>
+            <li><code>is_manually_corrected</code> (BOOLEAN)</li>
+        </ul>
+
+        <hr>
+
+        <h2>🛡️ Edge Cases & Future Extensions</h2>
+        <ul>
+            <li><strong>Record Overlap</strong>: If an admin uploads a file containing dates already in the DB, the system prompts for "Overwrite" or "Skip".</li>
+            <li><strong>Audit Logs</strong>: Every manual correction by a Super Admin tracks the "Original Value", "New Value", and "Timestamp" for audit readiness.</li>
+            <li><strong>Remote Access</strong>: Since it's on a local PC, the future cloud deployment will require a migration to an RDS-style MySQL server.</li>
+        </ul>
+    </div>
+</body>
+</html>
