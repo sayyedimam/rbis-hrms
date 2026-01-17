@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.router import api_router
 from app.core.database import engine
-from app.models import models, notice
+from app.models import models #, notice
 
 # Sync Database Tables
 models.Base.metadata.create_all(bind=engine)
