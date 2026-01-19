@@ -1,0 +1,173 @@
+<div class="operations-container">
+  <div class="operations-header">
+    <div class="title-group">
+      <h2>Attendance Operations</h2>
+      <p>
+        Centralized management for attendance data ingestion, exports, and
+        corrections.
+      </p>
+    </div>
+    <div class="header-actions">
+      <button class="btn-export" (click)="exportToCSV()">
+        <i data-lucide="download"></i> Export Reports
+      </button>
+      <button class="btn-console" (click)="toggleEditMode()">
+        <i data-lucide="terminal"></i> Correction Console
+      </button>
+    </div>
+  </div>
+
+  <!-- System Ingestion Section -->
+  <section class="ops-section">
+    <div class="section-card">
+      <div class="card-header">
+        <i data-lucide="upload-cloud"></i>
+        <div class="header-text">
+          <h3>System Ingestion</h3>
+          <p>Upload raw or processed attendance logs to sync the system.</p>
+        </div>
+      </div>
+      <div class="card-body">
+        <app-upload></app-upload>
+      </div>
+    </div>
+  </section>
+
+  <!-- Quick Info / Status -->
+  <div class="ops-info-grid">
+    <div class="info-card">
+      <span class="label">Data Hub</span>
+      <p>
+        Upload files from biometric devices or Excel exports here. The system
+        will automatically parse and merge records based on Employee ID and
+        Date.
+      </p>
+    </div>
+    <div class="info-card">
+      <span class="label">Audit Readiness</span>
+      <p>
+        Use the Export feature to generate historical reports. Use the
+        Correction Console for manual adjustments when punches are missed or
+        incorrect.
+      </p>
+    </div>
+  </div>
+
+  <!-- Correction Console (Full Screen Overlay) -->
+  <div class="edit-mode-main-overlay" *ngIf="isEditMode">
+    <div class="edit-console-card">
+      <div class="console-header">
+        <div class="h-left">
+          <h3>Attendance Correction Console</h3>
+          <p>Search and modify records directly</p>
+        </div>
+        <button class="close-console" (click)="toggleEditMode()">
+          &times; Close
+        </button>
+      </div>
+
+      <div class="console-search-bar">
+        <div class="search-input">
+          <label>Employee ID / Name</label>
+          <input
+            type="text"
+            [(ngModel)]="editSearchEmpId"
+            placeholder="e.g. RBIS0010"
+          />
+        </div>
+        <div class="search-input">
+          <label>From Date</label>
+          <input type="date" [(ngModel)]="fromDate" />
+        </div>
+        <div class="search-input">
+          <label>To Date</label>
+          <input type="date" [(ngModel)]="toDate" />
+        </div>
+      </div>
+
+      <div class="console-table-wrapper">
+        <table class="ops-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>EmpID</th>
+              <th>Employee Name</th>
+              <th>First In</th>
+              <th>Last Out</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of editBoardData">
+              <td>{{ row.Date }}</td>
+              <td>{{ row.EmpID }}</td>
+              <td>{{ row.Employee_Name || "--" }}</td>
+              <td>{{ row.First_In || "--:--" }}</td>
+              <td>{{ row.Last_Out || "--:--" }}</td>
+              <td>
+                <span class="status-badge" [class]="row.Attendance | lowercase">
+                  {{ row.Attendance }}
+                </span>
+              </td>
+              <td>
+                <div class="action-btns">
+                  <button class="btn-edit" (click)="openEditModal(row)">
+                    Edit
+                  </button>
+                  <button class="btn-delete" (click)="deleteRecord(row.id)">
+                    Delete
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Modal -->
+  <div class="modal-overlay" *ngIf="editingRecord">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Manual Correction</h3>
+        <button class="close-btn" (click)="closeEditModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-row">
+          <div class="form-group">
+            <label>First In</label>
+            <input
+              type="text"
+              [(ngModel)]="editingRecord.First_In"
+              placeholder="HH:MM"
+            />
+          </div>
+          <div class="form-group">
+            <label>Last Out</label>
+            <input
+              type="text"
+              [(ngModel)]="editingRecord.Last_Out"
+              placeholder="HH:MM"
+            />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Status</label>
+          <select [(ngModel)]="editingRecord.Attendance">
+            <option value="Present">Present</option>
+            <option value="Absent">Absent</option>
+            <option value="On Leave">On Leave</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancel" (click)="closeEditModal()">Cancel</button>
+        <button class="btn-save" (click)="saveRecord()" [disabled]="isSaving">
+          {{ isSaving ? "Saving..." : "Update Record" }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

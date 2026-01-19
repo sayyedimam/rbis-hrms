@@ -1,0 +1,143 @@
+.records-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+.record-card {
+  background: white;
+  border-radius: 20px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e2e8f0;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.record-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  border-color: #3b82f6;
+}
+
+.record-content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  gap: 1rem;
+}
+
+.file-name-container {
+  padding: 0.8rem 1rem;
+  background: #f8fafc;
+  border-radius: 12px;
+  border: 1px solid #f1f5f9;
+}
+
+.file-name-container h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
+  word-break: break-all;
+}
+
+.time-container {
+  padding-left: 0.5rem;
+}
+
+.creation-time {
+  font-size: 0.85rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-top: auto;
+}
+
+.uploader-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.8rem 1rem;
+  background: #eff6ff;
+  border-radius: 12px;
+  flex: 1;
+  max-width: 80%;
+}
+
+.uploader-info .label {
+  font-size: 0.75rem;
+  color: #3b82f6;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.uploader-info .value {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #1e3a8a;
+  word-break: break-all;
+}
+
+.circle-download {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;        /* makes it a circle */
+  border: none;
+  background-color: #2563eb; /* blue – change if needed */
+  color: white;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.circle-download:hover {
+  background-color: #1e40af;
+}
+
+.circle-download i {
+  font-size: 20px;
+}
+
+
+.loading-state, .no-records {
+  text-align: center;
+  padding: 100px 20px;
+  color: #94a3b8;
+}
+
+.no-records i {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+@media (max-width: 768px) {
+  .records-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .card-footer {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+  }
+
+  .uploader-info {
+    max-width: 100%;
+  }
+
+  .circle-download {
+    align-self: flex-end;
+  }
+}

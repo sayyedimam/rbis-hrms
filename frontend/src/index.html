@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>RBIS_HRMS</title>
+    <base href="/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" type="image/x-icon" href="favicon.ico" />
+    <script src="https://unpkg.com/lucide@latest"></script>
+  </head>
+  <body>
+    <app-root></app-root>
+    <script>
+      // Initialize icons with recursion protection
+      function safeCreateIcons() {
+        if (typeof lucide !== "undefined") {
+          lucide.createIcons();
+        }
+      }
+
+      // Initial call
+      safeCreateIcons();
+
+      // Watch for DOM changes to re-initialize icons in Angular SPA
+      const observer = new MutationObserver((mutations) => {
+        // Disconnect to avoid infinite loop when Lucide modifies the DOM
+        observer.disconnect();
+        safeCreateIcons();
+        // Re-observe
+        observer.observe(document.body, { childList: true, subtree: true });
+      });
+
+      observer.observe(document.body, { childList: true, subtree: true });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,186 @@
+<div class="module-view-padding">
+  <div class="no-data-msg" *ngIf="!hasData && !loading">
+    <i data-lucide="database"></i>
+    <h3>No Records Found</h3>
+    <p>Your attendance data hasn't been synced for this period yet.</p>
+  </div>
+
+  <div class="data-view" *ngIf="hasData || loading">
+    <div class="dashboard-header">
+      <h2 class="section-title">Workforce Overview</h2>
+    </div>
+
+    <!-- Filters Bar -->
+    <div class="filter-bar" *ngIf="!loading && hasData">
+      <div class="filter-group date-range">
+        <label><i data-lucide="calendar"></i> Date Range</label>
+        <div class="range-inputs">
+          <input
+            type="date"
+            [(ngModel)]="fromDate"
+            (change)="applyFilters()"
+            placeholder="From"
+          />
+          <span class="range-sep">to</span>
+          <input
+            type="date"
+            [(ngModel)]="toDate"
+            (change)="applyFilters()"
+            placeholder="To"
+          />
+        </div>
+      </div>
+
+      <!-- Admin Search Option -->
+      <div class="filter-group search-context" *ngIf="canViewAll">
+        <label><i data-lucide="user-search"></i> Context Search</label>
+        <div class="search-input-wrapper">
+          <input
+            type="text"
+            [(ngModel)]="searchTerm"
+            placeholder="Search Emp ID or Name..."
+            (keyup.enter)="applyFilters()"
+          />
+          <i
+            data-lucide="search"
+            class="search-icon"
+            (click)="applyFilters()"
+            style="cursor: pointer; pointer-events: auto"
+          ></i>
+        </div>
+      </div>
+
+      <button
+        class="reset-btn"
+        (click)="resetFilters()"
+        *ngIf="fromDate || toDate || searchTerm || (canViewAll && selectedEmp)"
+      >
+        Clear
+      </button>
+    </div>
+
+    <div class="active-profile-row" *ngIf="activeEmployee">
+      <div class="profile-info">
+        <div class="avatar-small">{{ activeEmployee.Name[0] }}</div>
+        <div class="text">
+          <span class="p-name">{{ activeEmployee.Name }}</span>
+          <span class="p-id">({{ activeEmployee.EmpID }})</span>
+        </div>
+      </div>
+      <div class="profile-badge">Individual Statistics Dashboard</div>
+    </div>
+
+    <!-- Stats Section (Conditionally Hidden) -->
+    <app-stats-grid
+      *ngIf="!loading && hasData && showStatsCards"
+      [stats]="stats"
+      (onStatusClick)="viewStatusDetails($event)">
+    </app-stats-grid>
+
+    <!-- Charts Grid (Restored) -->
+    <div class="charts-grid" *ngIf="!loading && hasData">
+      <div
+        class="chart-card"
+        [class.large]="showTrendChart"
+        *ngIf="showTrendChart"
+      >
+        <div class="chart-header">
+          <h3>Presence Trend</h3>
+          <p>Daily employee attendance overview</p>
+        </div>
+        <div class="chart-box">
+          <canvas
+            baseChart
+            [data]="barData"
+            [options]="barChartOptions"
+            type="bar"
+          ></canvas>
+        </div>
+      </div>
+
+      <div class="chart-card" *ngIf="showTrendChart">
+        <div class="chart-header">
+          <h3>Efficiency Analysis</h3>
+          <p>Average working hours over time</p>
+        </div>
+        <div class="chart-box">
+          <canvas
+            baseChart
+            [data]="lineData"
+            [options]="lineChartOptions"
+            type="line"
+          ></canvas>
+        </div>
+      </div>
+
+      <div class="chart-card" [class.large]="!showTrendChart">
+        <div class="chart-header">
+          <h3>Status Distribution</h3>
+          <p>Presence vs Absence breakdown</p>
+        </div>
+        <div class="chart-box small">
+          <canvas
+            baseChart
+            [data]="pieData"
+            [options]="pieChartOptions"
+            type="pie"
+          ></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Drill-down Modal -->
+    <div class="modal-overlay" *ngIf="showDrillDown">
+      <div class="modal-card larger">
+        <div class="modal-header">
+          <h3>{{ drillDownTitle }}</h3>
+          <button class="close-btn" (click)="closeDrillDown()">&times;</button>
+        </div>
+        <div class="modal-body scrollable">
+          <table class="analytics-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>EmpID</th>
+                <th>Employee Name</th>
+                <th>Status</th>
+                <th *ngIf="!hideTimings">In</th>
+                <th *ngIf="!hideTimings">Out</th>
+                <th *ngIf="!hideTimings">Duration</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let emp of drillDownList">
+                <td>{{ emp.Date }}</td>
+                <td>{{ emp.EmpID }}</td>
+                <td class="name-cell">{{ emp.Name }}</td>
+                <td>
+                  <span class="status-badge" [class]="emp.status | lowercase">{{
+                    emp.status
+                  }}</span>
+                </td>
+                <td *ngIf="!hideTimings">{{ emp.in || "--:--" }}</td>
+                <td *ngIf="!hideTimings">{{ emp.out || "--:--" }}</td>
+                <td *ngIf="!hideTimings">{{ emp.duration || "00:00" }}</td>
+              </tr>
+              <tr *ngIf="drillDownList.length === 0">
+                <td [attr.colspan]="hideTimings ? 4 : 7" class="no-records">
+                  No employees found in this category.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-cancel" (click)="closeDrillDown()">Close</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-state" *ngIf="loading">
+      <div class="spinner"></div>
+      <p>Analyzing workforce data...</p>
+    </div>
+  </div>
+</div>

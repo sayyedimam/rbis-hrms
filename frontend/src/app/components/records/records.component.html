@@ -1,0 +1,52 @@
+<div class="module-view-padding">
+  <section class="page-section">
+    <div class="section-header">
+      <div class="header-text">
+        <h2>Digital Vault</h2>
+        <p>Download and verify raw original biometric logs</p>
+      </div>
+    </div>
+
+    <div class="records-grid" *ngIf="!loading; else loader">
+      <div class="record-card" *ngFor="let record of records">
+        <div class="record-content">
+          <div class="file-name-container">
+            <h3>{{ record.filename }}</h3>
+          </div>
+
+          <div class="time-container">
+            <span class="creation-time">{{
+              record.uploaded_at | date : "medium"
+            }}</span>
+          </div>
+
+          <div class="card-footer">
+            <div class="uploader-info">
+              <span class="label">Uploaded by:</span>
+              <span class="value">{{ record.uploaded_by }}</span>
+            </div>
+            <button
+              class="circle-download"
+              (click)="download(record)"
+              title="Download"
+            >
+              <i data-lucide="download"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="no-records" *ngIf="records.length === 0">
+        <i data-lucide="folder-open"></i>
+        <p>No historical records found.</p>
+      </div>
+    </div>
+
+    <ng-template #loader>
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <p>Fetching records from vault...</p>
+      </div>
+    </ng-template>
+  </section>
+</div>
