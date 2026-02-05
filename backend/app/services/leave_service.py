@@ -209,9 +209,11 @@ class LeaveService:
         
         if action == "APPROVE":
             self.leave_repo.update_request_status(request, "APPROVED_BY_HR")
+            request.hr_remarks = remarks
             message = "Leave request forwarded to CEO for final approval"
         else:
             self.leave_repo.update_request_status(request, "REJECTED")
+            request.hr_remarks = remarks
             message = "Leave request rejected by HR"
         
         # Log approval action
@@ -245,6 +247,7 @@ class LeaveService:
         
         if action == "APPROVE":
             self.leave_repo.update_request_status(request, "APPROVED")
+            request.ceo_remarks = remarks
             
             # Update balance
             year = request.start_date.year
@@ -257,6 +260,7 @@ class LeaveService:
             message = "Leave request approved by CEO"
         else:
             self.leave_repo.update_request_status(request, "REJECTED")
+            request.ceo_remarks = remarks
             message = "Leave request rejected by CEO"
         
         # Log approval action

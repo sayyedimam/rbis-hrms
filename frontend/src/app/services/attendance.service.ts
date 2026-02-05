@@ -1,12 +1,13 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { environment } from '../../environments/environment';
 import { Observable, Subject, BehaviorSubject } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AttendanceService {
-  private apiUrl = 'http://localhost:8000';
+  private apiUrl = environment.apiUrl;
 
   // Subjects for in-memory data state
   private typeADataSubject = new BehaviorSubject<any[]>([]);
@@ -63,8 +64,12 @@ export class AttendanceService {
     return this.http.delete(`${this.apiUrl}/attendance/${id}`);
   }
 
-  fetchAttendance(): void {
-    this.http.get<any[]>(`${this.apiUrl}/attendance/`).subscribe({
+  fetchAttendance(startDate?: string, endDate?: string): void {
+    let params = {};
+    if (startDate) params = { ...params, start_date: startDate };
+    if (endDate) params = { ...params, end_date: endDate };
+
+    this.http.get<any[]>(`${this.apiUrl}/attendance/`, { params }).subscribe({
       next: (data) => {
         // Distribute data based on source or type
         // For now, we'll put all into typeA if it has In_Duration, otherwise typeB

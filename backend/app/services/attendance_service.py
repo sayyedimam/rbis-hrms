@@ -252,25 +252,39 @@ class AttendanceService:
         
         return saved_count, updated_count
     
-    def get_attendance_records(self, user: Employee) -> List:
+    def get_attendance_records(self, user: Employee, start_date: str = None, end_date: str = None) -> List:
         """
-        Get attendance records from 1 month ago to today (or latest available)
-        Based on user role
+        Get attendance records within a date range.
+        If dates are provided, they are used.
+        If not, defaults to 1 month window ending at the latest available date in DB.
         """
-        # Calculate date range: 1 month ago to today
-        today = date.today()
-        one_month_ago = today - timedelta(days=30)
+        # 1. Determine date objects
+        start_obj = parse_date(start_date) if start_date else None
+        end_obj = parse_date(end_date) if end_date else None
         
+        # 2. Default Range Logic (if no filters provided)
+        if not start_obj and not end_obj:
+            latest = self.attendance_repo.get_latest_date()
+            # Use max(latest, today) to handle future leave records, and 
+            # 90 days to be more generous with historical data.
+            end_obj = max(latest, date.today()) if latest else date.today()
+            start_obj = end_obj - timedelta(days=90)
+        elif not start_obj:
+             start_obj = end_obj - timedelta(days=90)
+        elif not end_obj:
+             end_obj = start_obj + timedelta(days=90)
+
+        # 3. Query based on role
         if user.role == UserRole.EMPLOYEE:
             records = self.attendance_repo.get_by_date_range(
                 emp_id=user.emp_id,
-                start_date=one_month_ago,
-                end_date=today
+                start_date=start_obj,
+                end_date=end_obj
             )
         else:
             records = self.attendance_repo.get_by_date_range(
-                start_date=one_month_ago,
-                end_date=today
+                start_date=start_obj,
+                end_date=end_obj
             )
             
         # Enrich and flatten for frontend

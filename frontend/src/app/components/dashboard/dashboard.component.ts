@@ -224,6 +224,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
         this.fromDate = '';
         this.toDate = '';
         this.searchTerm = '';
+        this.lastFetchedRange = { from: '', to: '' };
         
         if (this.canViewAll) {
             this.selectedEmp = '';
@@ -233,11 +234,23 @@ export class DashboardComponent implements OnInit, OnDestroy {
         }
         this.activeEmployee = null;
         this.showStatsCards = false;
-        this.applyFilters();
+        this.attendanceService.fetchAttendance();
     }
 
+    private lastFetchedRange = { from: '', to: '' };
+
     applyFilters() {
-        // Validation: If no filters, show organization-wide for latest date (handled in calculateStats)
+        // 1. Date Range Re-fetch from Backend
+        // If fromDate has changed and is set, we need more data from backend
+        if (this.fromDate && (this.fromDate !== this.lastFetchedRange.from || this.toDate !== this.lastFetchedRange.to)) {
+            const start = this.fromDate;
+            const end = this.toDate || this.fromDate;
+            this.lastFetchedRange = { from: this.fromDate, to: this.toDate };
+            this.attendanceService.fetchAttendance(start, end);
+            return; // syncData will be triggered by service update
+        }
+
+        // 2. Client-side Filtering
         let filtered = [...this.rawData];
 
         // 1. Date Range Filtering

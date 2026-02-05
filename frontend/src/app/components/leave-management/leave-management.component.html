@@ -53,6 +53,10 @@
           </div>
         </div>
 
+        <div class="holiday-stats" *ngIf="holidays.length > 0">
+          <span class="stat-badge">Total Holidays: {{ holidays.length }}</span>
+        </div>
+
         <table class="holiday-table">
           <thead>
             <tr>
@@ -64,7 +68,7 @@
           </thead>
           <tbody>
             <tr *ngFor="let h of holidays">
-              <td>{{ h.date | date : "d MMMM y" }}</td>
+              <td>{{ h.date | date: "d MMMM y" }}</td>
               <td>{{ h.day }}</td>
               <td>{{ h.name }}</td>
               <td *ngIf="isHr">

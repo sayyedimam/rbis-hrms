@@ -1,5 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from app.core.config import get_settings
+settings = get_settings()
 from app.api.router import api_router
 from app.core.database import engine
 from app.models import models #, notice
@@ -10,8 +12,6 @@ models.Base.metadata.create_all(bind=engine)
 app = FastAPI(title="RBIS HR Management System API", version="2.0.0")
 
 # CORS Configuration - Use allowed origins from settings
-from app.core.config import get_settings
-settings = get_settings()
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.allowed_origins,
@@ -20,7 +20,7 @@ app.add_middleware(
     allow_headers=["Content-Type", "Authorization"],
 )
 
-# Include Central Router
+# Include Central Routerz
 app.include_router(api_router)
 
 @app.get("/")

@@ -1,21 +1,20 @@
 from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, declarative_base
 import os
-from dotenv import load_dotenv
 
-load_dotenv()
-
-DATABASE_URL = os.getenv("DATABASE_URL", "mssql+pyodbc://localhost/RBIS_HRMS?driver=ODBC+Driver+17+for+SQL+Server&trusted_connection=yes&TrustServerCertificate=yes")
+DATABASE_URL = os.environ["DATABASE_URL"]  # read env directly
 
 engine = create_engine(
     DATABASE_URL,
-    pool_size=20,          # Maintain 20 open connections
-    max_overflow=10,       # Allow 10 extra connections during spikes
-    pool_pre_ping=True,    # Check connection health before use
-    pool_recycle=3600      # Recycle connections every hour
+    pool_pre_ping=True,
+    pool_recycle=1800,
 )
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+SessionLocal = sessionmaker(
+    autocommit=False,
+    autoflush=False,
+    bind=engine,
+)
 
 Base = declarative_base()
 

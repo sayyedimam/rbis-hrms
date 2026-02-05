@@ -120,6 +120,8 @@ def process_files_background(file_data_list: List[dict], admin_email: str):
 
 @router.get("/")
 def get_attendance(
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
     user: Employee = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -128,10 +130,11 @@ def get_attendance(
     
     - Employees see only their own records
     - Admin/HR/CEO see all records
+    - Supports optional date range filtering
     - Returns list of attendance records
     """
     service = AttendanceService(db)
-    return service.get_attendance_records(user)
+    return service.get_attendance_records(user, start_date, end_date)
 
 @router.put("/{id}")
 def update_attendance(

@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.models.models import Attendance
 from typing import List, Optional
 from datetime import date
+from sqlalchemy import func
 from sqlalchemy.orm import joinedload
 import functools
 import time
@@ -37,6 +38,10 @@ class AttendanceRepository:
     
     def __init__(self, db: Session):
         self.db = db
+    
+    def get_latest_date(self) -> Optional[date]:
+        """Get the most recent attendance date from the database"""
+        return self.db.query(func.max(Attendance.date)).scalar()
     
     def get_by_id(self, attendance_id: int) -> Optional[Attendance]:
         """Get attendance record by ID"""

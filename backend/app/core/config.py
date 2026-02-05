@@ -60,14 +60,14 @@ class Settings(BaseSettings):
     # CORS
     # ========================================================================
     ALLOWED_ORIGINS_STR: str = Field(
-        default="http://localhost:4200",
+        default="http://localhost:4200,https://jolly-stone-024f55400.6.azurestaticapps.net",
         description="Comma-separated list of allowed origins (or JSON array)"
     )
     
     # Parsed list of allowed origins (set after parsing ALLOWED_ORIGINS_STR)
     allowed_origins: List[str] = Field(
-        default=["http://localhost:4200"],
-        exclude=True,  # Don't include in validation
+        default=["http://localhost:4200", "https://jolly-stone-024f55400.6.azurestaticapps.net"],
+        exclude=True,
         description="Parsed list of CORS origins"
     )
     
