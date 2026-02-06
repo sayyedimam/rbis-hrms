@@ -27,6 +27,10 @@ app.include_router(api_router)
 async def root():
     return {"message": "Welcome to RBIS HRMS API", "status": "Online"}
 
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
 if __name__ == "__main__":
     import uvicorn
     from app.core.config import get_settings
