@@ -15,6 +15,7 @@ bcrypt==3.2.2
 python-jose[cryptography]==3.3.0
 python-dotenv==1.0.1
 azure-storage-blob==12.24.0
+aiohttp==3.9.5
 # Note: Azure App Service (Linux) requires ODBC Driver 18 for SQL Server
 # This is pre-installed on Azure, but ensure your connection string specifies:
 # driver=ODBC+Driver+18+for+SQL+Server
