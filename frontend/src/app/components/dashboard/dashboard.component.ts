@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AttendanceService } from '../../services/attendance.service';
-import { BaseChartDirective } from 'ng2-charts';
+import { NgChartsModule } from 'ng2-charts';
 import { ChartConfiguration, ChartOptions, Chart, registerables } from 'chart.js';
 import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
@@ -11,12 +11,10 @@ import { NotificationService } from '../../services/notification.service';
 import { LeaveService } from '../../services/leave.service';
 import { StatsGridComponent } from './stats-grid.component';
 
-Chart.register(...registerables);
-
 @Component({
     selector: 'app-dashboard',
     standalone: true,
-    imports: [CommonModule, FormsModule, RouterModule, BaseChartDirective, StatsGridComponent],
+    imports: [CommonModule, FormsModule, RouterModule, NgChartsModule, StatsGridComponent],
     templateUrl: './dashboard.component.html',
     styleUrl: './dashboard.component.css'
 })
