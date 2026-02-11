@@ -4,10 +4,9 @@ from app.core.config import get_settings
 settings = get_settings()
 from app.api.router import api_router
 from app.core.database import engine
-from app.models import models #, notice
-
+from app.models import Base
 # Sync Database Tables
-models.Base.metadata.create_all(bind=engine)
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="RBIS HR Management System API", version="2.0.0")
 

@@ -9,7 +9,7 @@ from typing import Optional
 
 from app.api.dependencies import get_db, check_admin
 from app.services.admin_service import AdminService
-from app.models.models import Employee
+from app.models import Employee, UserRole, UserStatus
 
 router = APIRouter()
 

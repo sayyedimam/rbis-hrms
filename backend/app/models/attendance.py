@@ -2,7 +2,8 @@
 Attendance Model
 Contains Attendance tracking model
 """
-from sqlalchemy import Column, Integer, String, Date, Boolean
+from sqlalchemy import Column, Integer, String, Date, Boolean, ForeignKey
+from sqlalchemy.orm import relationship
 from app.models.base import Base
 
 class Attendance(Base):
@@ -11,6 +12,7 @@ class Attendance(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     emp_id = Column(String(50), index=True, nullable=False)
+    employee_name = Column(String(200), nullable=True)
     date = Column(Date, index=True, nullable=False)
     first_in = Column(String(50), nullable=True)
     last_out = Column(String(50), nullable=True)
@@ -22,3 +24,10 @@ class Attendance(Base):
     source_file = Column(String(255))
     is_manually_corrected = Column(Boolean, default=False)
     corrected_by = Column(String(100), nullable=True)
+
+    owner = relationship(
+        "Employee", 
+        primaryjoin="Attendance.emp_id == Employee.emp_id",
+        foreign_keys=[emp_id],
+        back_populates="attendance_records"
+    )

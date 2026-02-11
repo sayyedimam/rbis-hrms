@@ -12,7 +12,7 @@ import io
 
 from app.api.dependencies import get_db, get_current_user, check_admin
 from app.services.attendance_service import AttendanceService
-from app.models.models import Employee
+from app.models import Employee
 import logging
 logger = logging.getLogger(__name__)
 
@@ -70,8 +70,7 @@ async def upload_files(
     return {"message": f"Successfully validated {len(files)} file(s). Processing has started."}
 
 from app.core.database import SessionLocal
-from app.models.models import Employee
-
+from app.models import Employee, Attendance
 def process_files_background(file_data_list: List[dict], admin_email: str):
     """Background task to process files"""
     db = SessionLocal()

@@ -3,7 +3,7 @@ Attendance Repository
 Database access layer for Attendance model
 """
 from sqlalchemy.orm import Session
-from app.models.models import Attendance
+from app.models import Employee, Attendance
 from typing import List, Optional
 from datetime import date
 from sqlalchemy import func

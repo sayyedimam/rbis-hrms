@@ -3,7 +3,7 @@ File Upload Repository
 Database access layer for FileUploadLog model
 """
 from sqlalchemy.orm import Session
-from app.models.models import FileUploadLog
+from app.models import FileUploadLog
 from typing import Optional, List
 
 class FileRepository:

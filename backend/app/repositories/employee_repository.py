@@ -3,7 +3,7 @@ Employee Repository
 Database access layer for Employee model
 """
 from sqlalchemy.orm import Session
-from app.models.models import Employee
+from app.models import Employee, UserStatus, UserRole
 from typing import Optional, List
 
 class EmployeeRepository:

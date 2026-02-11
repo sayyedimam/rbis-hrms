@@ -7,7 +7,7 @@ from fastapi import HTTPException
 from typing import List, Dict
 
 from app.repositories.employee_repository import EmployeeRepository
-from app.models.models import Employee, UserRole
+from app.models import Employee, UserRole, UserStatus
 
 class AdminService:
     """Handles admin operations business logic"""
@@ -62,11 +62,23 @@ class AdminService:
                 )
         
         # Update fields
+        email_changed = False
+        if 'email' in update_data and update_data['email'] != employee.email:
+            if employee.id == admin.id:
+                email_changed = True
+
         for key, value in update_data.items():
             if hasattr(employee, key) and value is not None:
                 setattr(employee, key, value)
         
         self.db.commit()
+        
+        if email_changed:
+            return {
+                "message": "Your profile was updated, including your email. You will need to log in again with your new email address.",
+                "relogin_required": True
+            }
+            
         return {"message": "Employee updated successfully"}
     
     def delete_employee(self, emp_id: int, admin: Employee) -> Dict:

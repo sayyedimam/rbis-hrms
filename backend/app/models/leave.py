@@ -3,6 +3,7 @@ Leave Models
 Contains all leave management related models
 """
 from sqlalchemy import Column, Integer, String, Date, Boolean, ForeignKey, DateTime
+from sqlalchemy.orm import relationship
 from app.models.base import Base, get_ist_now
 
 class LeaveType(Base):
@@ -27,6 +28,9 @@ class LeaveBalance(Base):
     allocated = Column(Integer)
     used = Column(Integer, default=0)
 
+    employee = relationship("Employee", back_populates="leave_balances")
+    leave_type = relationship("LeaveType")
+
 class LeaveRequest(Base):
     """Leave request model - employee leave applications"""
     __tablename__ = "leave_requests"
@@ -44,6 +48,10 @@ class LeaveRequest(Base):
     attachment_path = Column(String(255), nullable=True)
     created_at = Column(DateTime, default=get_ist_now)
 
+    employee = relationship("Employee", back_populates="leave_requests")
+    leave_type = relationship("LeaveType")
+    approvals = relationship("LeaveApprovalLog", back_populates="request")
+
 class LeaveApprovalLog(Base):
     """Leave approval log model - tracks approval actions"""
     __tablename__ = "leave_approval_logs"
@@ -55,12 +63,7 @@ class LeaveApprovalLog(Base):
     remarks = Column(String(500), nullable=True)
     action_at = Column(DateTime, default=get_ist_now)
 
-class Holiday(Base):
-    """Holiday model - list of public holidays"""
-    __tablename__ = "holidays"
+    request = relationship("LeaveRequest", back_populates="approvals")
+    approver = relationship("Employee")
 
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String(100), nullable=False)
-    date = Column(Date, nullable=False, unique=True)
-    year = Column(Integer, nullable=False)
-    day = Column(String(20), nullable=True) # e.g. "Monday"
+

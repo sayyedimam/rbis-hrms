@@ -10,7 +10,7 @@ from typing import List, Dict
 from app.repositories.leave_repository import LeaveRepository
 from app.repositories.attendance_repository import AttendanceRepository
 from app.repositories.employee_repository import EmployeeRepository
-from app.models.models import Employee, UserRole
+from app.models import Employee, UserRole, Holiday, LeaveType, LeaveBalance, LeaveRequest, LeaveApprovalLog
 
 class LeaveService:
     """Handles leave management business logic"""

@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 from app.repositories.employee_repository import EmployeeRepository
 from app.core.security import get_password_hash, verify_password, create_access_token
 from app.utils.email_service import generate_otp, send_otp_email
-from app.models.models import Employee, UserRole, get_ist_now
+from app.models import Employee, UserStatus, UserRole, get_ist_now
 
 class AuthService:
     """Handles authentication business logic"""

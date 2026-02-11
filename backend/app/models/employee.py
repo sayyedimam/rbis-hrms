@@ -3,6 +3,7 @@ Employee Model
 Contains Employee model and related enums
 """
 from sqlalchemy import Column, Integer, String, DateTime, Boolean
+from sqlalchemy.orm import relationship
 import enum
 from app.models.base import Base, get_ist_now
 
@@ -40,3 +41,13 @@ class Employee(Base):
     role = Column(String(50), default="EMPLOYEE")
     status = Column(String(50), default="ACTIVE")
     created_at = Column(DateTime, default=get_ist_now)
+
+    # Relationships
+    attendance_records = relationship(
+        "Attendance", 
+        primaryjoin="Employee.emp_id == Attendance.emp_id",
+        foreign_keys="Attendance.emp_id",
+        back_populates="owner"
+    )
+    leave_balances = relationship("LeaveBalance", back_populates="employee")
+    leave_requests = relationship("LeaveRequest", back_populates="employee")

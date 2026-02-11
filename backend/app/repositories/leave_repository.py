@@ -3,7 +3,7 @@ Leave Repository
 Database access layer for Leave-related models
 """
 from sqlalchemy.orm import Session
-from app.models.models import LeaveType, LeaveBalance, LeaveRequest, LeaveApprovalLog, Holiday
+from app.models import Employee, LeaveType, LeaveBalance, LeaveRequest, LeaveApprovalLog, Holiday
 from typing import List, Optional
 from datetime import date
 

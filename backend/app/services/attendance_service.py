@@ -10,7 +10,7 @@ from datetime import date, datetime, timedelta
 
 from app.repositories.attendance_repository import AttendanceRepository
 from app.repositories.file_repository import FileRepository
-from app.models.models import Employee, UserRole
+from app.models import Attendance, Employee, UserRole
 from app.utils.file_utils import calculate_file_hash, generate_safe_filename, normalize_emp_id
 from app.utils.date_utils import parse_date, format_time
 from app.services.cleaner import detect_and_clean_memory

@@ -16,14 +16,15 @@ async def upload_bytes_to_azure(content: bytes, filename: str, content_type: str
         raise HTTPException(status_code=500, detail="Azure Storage not configured")
     
     try:
-        container_client = client.get_container_client(settings.AZURE_CONTAINER_NAME)
-        blob_client = container_client.get_blob_client(filename)
-        await blob_client.upload_blob(
-            content,
-            overwrite=True,
-            content_type=content_type)
-        
-        return filename
+        async with client:
+            container_client = client.get_container_client(settings.AZURE_CONTAINER_NAME)
+            blob_client = container_client.get_blob_client(filename)
+            await blob_client.upload_blob(
+                content,
+                overwrite=True,
+                content_type=content_type)
+            
+            return filename
     except Exception as e:
         logger.error(f"Failed to upload bytes to Azure: {e}")
         raise HTTPException(status_code=500, detail=f"Azure upload failed: {str(e)}")
@@ -39,17 +40,17 @@ async def upload_file_to_azure(file: UploadFile, filename: str) -> str:
         raise HTTPException(status_code=500, detail="Azure Storage not configured")
     
     try:
-        container_client = client.get_container_client(settings.AZURE_CONTAINER_NAME)
-          
-        blob_client = container_client.get_blob_client(filename)
-            
-        content_type = file.content_type or "application/octet-stream"
-        content = await file.read()
-            
-        await blob_client.upload_blob(content, overwrite=True, content_type=content_type)
-        await file.seek(0)
-            
-        return filename
+        async with client:
+            container_client = client.get_container_client(settings.AZURE_CONTAINER_NAME)
+            blob_client = container_client.get_blob_client(filename)
+                
+            content_type = file.content_type or "application/octet-stream"
+            content = await file.read()
+                
+            await blob_client.upload_blob(content, overwrite=True, content_type=content_type)
+            await file.seek(0)
+                
+            return filename
     except Exception as e:
         logger.error(f"Failed to upload to Azure: {e}")
         raise HTTPException(status_code=500, detail=f"Azure upload failed: {str(e)}")
@@ -64,15 +65,16 @@ async def download_file_stream(filename: str) -> bytes:
         raise HTTPException(status_code=500, detail="Azure Storage not configured")
 
     try:
-        container_client = client.get_container_client(settings.AZURE_CONTAINER_NAME)
-        blob_client = container_client.get_blob_client(filename)
+        async with client:
+            container_client = client.get_container_client(settings.AZURE_CONTAINER_NAME)
+            blob_client = container_client.get_blob_client(filename)
 
-        if not await blob_client.exists():
-            raise HTTPException(status_code=404, detail="File find in Azure Storage")
+            if not await blob_client.exists():
+                raise HTTPException(status_code=404, detail="File find in Azure Storage")
 
-        stream = await blob_client.download_blob()
-        data = await stream.readall()
-        return data
+            stream = await blob_client.download_blob()
+            data = await stream.readall()
+            return data
     except HTTPException:
         raise
     except Exception as e:

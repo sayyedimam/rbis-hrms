@@ -22,6 +22,9 @@ from app.models.leave import (
     LeaveApprovalLog
 )
 
+# Import Holiday models
+from app.models.holiday import Holiday
+
 # Export all models and utilities
 __all__ = [
     # Base
@@ -45,4 +48,7 @@ __all__ = [
     "LeaveBalance",
     "LeaveRequest",
     "LeaveApprovalLog",
+    
+    # Holiday
+    "Holiday",
 ]

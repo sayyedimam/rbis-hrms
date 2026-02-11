@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from app.services.azure_storage_service import upload_file_to_azure, download_file_stream, download_file_stream_sync
 from app.api.dependencies import get_db, check_admin
 from app.repositories.file_repository import FileRepository
-from app.models.models import Employee
+from app.models import Attendance, Employee, FileUploadLog
 
 router = APIRouter()
 

@@ -9,7 +9,7 @@ from typing import Optional
 
 from app.api.dependencies import get_db, get_current_user
 from app.repositories.employee_repository import EmployeeRepository
-from app.models.models import Employee
+from app.models import Employee
 
 router = APIRouter()
 

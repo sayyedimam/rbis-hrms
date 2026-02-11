@@ -11,7 +11,7 @@ from typing import Optional, Dict, List
 
 from app.api.dependencies import get_db, get_current_user, check_hr, check_ceo
 from app.services.leave_service import LeaveService
-from app.models.models import Employee
+from app.models import Employee
 from app.utils.file_utils import normalize_emp_id
 
 router = APIRouter()
@@ -55,7 +55,7 @@ def get_holidays(
     db: Session = Depends(get_db)
 ):
     """Get list of holidays"""
-    from app.models.models import Holiday
+    from app.models import Employee, LeaveType, LeaveBalance, LeaveRequest, Holiday
     holidays = db.query(Holiday).filter(Holiday.year == year).order_by(Holiday.date).all()
     return holidays
 
