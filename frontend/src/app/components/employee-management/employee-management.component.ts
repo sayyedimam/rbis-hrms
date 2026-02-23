@@ -18,6 +18,7 @@ export class EmployeeManagementComponent implements OnInit {
   searchTerm: string = '';
   editingEmployee: any = null;
   canEdit: boolean = false;
+  isSuperAdmin: boolean = false;
 
   constructor(
     private adminService: AdminService,
@@ -28,6 +29,7 @@ export class EmployeeManagementComponent implements OnInit {
   ngOnInit(): void {
     const role = this.authService.getUserRole();
     this.canEdit = role === 'SUPER_ADMIN' || role === 'CEO';
+    this.isSuperAdmin = role === 'SUPER_ADMIN';
     this.loadEmployees();
   }
 

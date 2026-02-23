@@ -39,24 +39,21 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
   canViewAll = false;
 
   ngOnInit() {
-    const role = this.authService.currentUser?.role;
-    this.canViewAll = role === 'SUPER_ADMIN' || role === 'HR' || role === 'CEO';
+    this.canViewAll = this.authService.isAtLeastHR();
     
     // For non-admin employees, default searchTerm to their own ID
     if (!this.canViewAll && this.authService.currentUser?.emp_id) {
         this.searchTerm = this.authService.currentUser.emp_id;
     }
 
-    // Fetch holidays first or in parallel
+    // Fetch holidays
     this.leaveService.getHolidays().subscribe(data => {
         this.holidays = data;
-        // Trigger sync if data already exists, otherwise wait for subscription
-        if (this.attendanceService.typeAData.length > 0) this.syncData();
+        if (this.attendanceService.attendanceData.length > 0) this.syncData();
     });
 
     this.attendanceService.fetchAttendance();
-    this.subs.add(this.attendanceService.typeAData$.subscribe(() => this.syncData()));
-    this.subs.add(this.attendanceService.typeBData$.subscribe(() => this.syncData()));
+    this.subs.add(this.attendanceService.attendanceData$.subscribe(() => this.syncData()));
   }
 
   ngOnDestroy() {
@@ -64,34 +61,7 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
   }
 
   syncData() {
-    const dataA = this.attendanceService.typeAData;
-    const dataB = this.attendanceService.typeBData;
-    const mergeMap = new Map();
-    
-    [...dataA, ...dataB].forEach(rec => {
-      const key = `${rec.EmpID}_${rec.Date}`;
-      if (!mergeMap.has(key)) {
-        mergeMap.set(key, { ...rec });
-      } else {
-        const existing = mergeMap.get(key);
-        existing.In_Duration = existing.In_Duration || rec.In_Duration;
-        existing.Out_Duration = existing.Out_Duration || rec.Out_Duration;
-        existing.Total_Duration = existing.Total_Duration || rec.Total_Duration;
-        if (rec.Attendance === 'Present') existing.Attendance = 'Present';
-      }
-    });
-    this.rawData = Array.from(mergeMap.values()).filter((rec: any) => {
-      const dateStr = String(rec.Date).split('T')[0];
-      const date = new Date(rec.Date);
-      
-      const isSunday = date.getDay() === 0;
-      const isHoliday = this.holidays.some(h => h.date === dateStr);
-
-      if ((isSunday || isHoliday) && rec.Attendance !== 'Present') {
-        return false; // Hide absent on Sunday or Holiday
-      }
-      return true;
-    });
+    this.rawData = this.attendanceService.attendanceData;
     if (this.searchPerformed) {
        this.performSearch(); // Refresh results if data updates
     }

@@ -11,6 +11,7 @@ import { LeaveManagementComponent } from './components/leave-management/leave-ma
 import { EmployeeManagementComponent } from './components/employee-management/employee-management.component';
 //import { NoticeBoardComponent } from './components/notice-board/notice-board.component';
 //import { NoticeManagementComponent } from './components/notice-management/notice-management.component';
+import { RoleManagementComponent } from './components/role-management/role-management.component';
 import { AuthGuard } from './guards/auth.guard';
 
 export const routes: Routes = [
@@ -24,6 +25,7 @@ export const routes: Routes = [
   { path: 'employee-management', component: EmployeeManagementComponent, canActivate: [AuthGuard] },
   { path: 'profile', component: ProfileComponent, canActivate: [AuthGuard] },
   { path: 'leave-management', component: LeaveManagementComponent, canActivate: [AuthGuard] },
+  { path: 'role-management', component: RoleManagementComponent, canActivate: [AuthGuard] },
   //{ path: 'notices', component: NoticeBoardComponent, canActivate: [AuthGuard] },
   //{ path: 'admin/notices', component: NoticeManagementComponent, canActivate: [AuthGuard] },
   { path: '', redirectTo: '/dashboard', pathMatch: 'full' },

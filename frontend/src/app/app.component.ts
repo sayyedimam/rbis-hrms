@@ -39,9 +39,16 @@ export class AppComponent implements OnInit {
     // Subscribe to current user for navigation and profile display
     this.authService.currentUser$.subscribe(user => {
       this.currentUser = user;
-      this.isAdmin = user?.role === 'SUPER_ADMIN';
-      this.isHr = user?.role === 'HR' || user?.role === 'SUPER_ADMIN';
-      this.isCeo = user?.role === 'CEO' || user?.role === 'SUPER_ADMIN';
+      if (user) {
+        const role = user.role || '';
+        this.isAdmin = (role === 'SUPER_ADMIN');
+        this.isHr = (['SUPER_ADMIN', 'HR', 'CEO'].includes(role)); // OnBoarding, Master Table
+        this.isCeo = (role === 'CEO' || role === 'SUPER_ADMIN'); // CEO-level tools (Operations, Records)
+      } else {
+        this.isAdmin = false;
+        this.isHr = false;
+        this.isCeo = false;
+      }
     });
 
     // Subscribe to data availability

@@ -139,6 +139,10 @@ class LeaveRepository:
         """Delete holiday"""
         self.db.delete(holiday)
 
+    def get_all_holidays(self) -> List[Holiday]:
+        """Get all holidays"""
+        return self.db.query(Holiday).all()
+
     def flush(self) -> None:
         """Flush changes"""
         self.db.flush()

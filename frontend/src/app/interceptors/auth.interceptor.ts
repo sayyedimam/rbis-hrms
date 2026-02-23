@@ -4,13 +4,15 @@ import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { Router } from '@angular/router';
 
+import { AuthService } from '../services/auth.service';
+
 @Injectable()
 export class AuthInterceptor implements HttpInterceptor {
-  constructor(private router: Router) {}
+  constructor(private router: Router, private authService: AuthService) {}
 
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
-    const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
-    const token = user.token;
+    const user = this.authService.currentUser;
+    const token = user?.token;
 
     let authReq = req;
     if (token) {
@@ -25,8 +27,8 @@ export class AuthInterceptor implements HttpInterceptor {
           // Session expired or unauthorized
           console.log('Session expired. Redirecting to login...');
           
-          // Clear user data
-          localStorage.removeItem('currentUser');
+          // Clear user data via service
+          this.authService.logout();
           
           // Redirect to login
           this.router.navigate(['/login']);

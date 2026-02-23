@@ -98,38 +98,39 @@ def complete_onboarding(
     # Check for existing employee by email
     employee = repo.get_by_email(target_email)
     
-    if employee:
-        # CRITICAL: Prevent overwriting ACTIVE employees
-        if employee.status == UserStatus.ACTIVE:
-            # Try alternate email format: first_name.last_name@rbistech.com
-            alt_email = f"{data.first_name}.{data.last_name}@rbistech.com".lower()
+    # Logic for conflict-resistant email generation
+    def generate_unique_email(first, last):
+        base = f"{first.lower()}{last[0].lower()}"
+        domain = "@rbistech.com"
+        
+        # Check base first
+        candidate = f"{base}{domain}"
+        if not repo.get_by_email(candidate):
+            return candidate
             
-            # If alternate is same as original (rare but possible), it's a hard conflict
-            if alt_email == target_email:
-                 raise HTTPException(
-                    status_code=400,
-                    detail=f"Email {target_email} already exists and is active. Please use a different email."
-                )
-            
-            # Check if alternate email is also taken
-            conflict_check = repo.get_by_email(alt_email)
-            if conflict_check:
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"Both primary ({target_email}) and alternate ({alt_email}) emails are already taken."
-                )
-            
-            # Switch to alternate email
-            target_email = alt_email
-            data.email = alt_email # Update input data
-            employee = None # Treat as NEW employee
-        # If employee is PENDING, we proceed to update (valid onboarding flow)
+        # Try counters 01, 02, ...
+        counter = 1
+        while True:
+            candidate = f"{base}{counter:02d}{domain}"
+            if not repo.get_by_email(candidate):
+                return candidate
+            counter += 1
+            if counter > 99: # Safety break
+                raise HTTPException(status_code=500, detail="Could not generate a unique email after 99 attempts")
+
+    # If email already exists, generate a new one
+    if repo.get_by_email(target_email):
+        target_email = generate_unique_email(data.first_name, data.last_name)
+        data.email = target_email
+
+    # Check for existing employee object (to update status if PENDING)
+    employee = repo.get_by_email(target_email)
 
     if not employee:
         # Create new employee if they don't exist
         employee_data = data.dict()
-        employee_data["email"] = target_email # Ensure email is set
-        employee_data["status"] = UserStatus.PENDING # Initial status
+        employee_data["email"] = target_email
+        employee_data["status"] = UserStatus.PENDING
         employee = repo.create(employee_data)
     
     # Check if emp_id already exists

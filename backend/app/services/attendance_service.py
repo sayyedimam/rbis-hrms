@@ -255,18 +255,22 @@ class AttendanceService:
     def get_attendance_records(self, user: Employee, start_date: str = None, end_date: str = None) -> List:
         """
         Get attendance records within a date range.
-        If dates are provided, they are used.
-        If not, defaults to 1 month window ending at the latest available date in DB.
+        Handles role-based access and excludes non-present records on Sundays/Holidays.
         """
         # 1. Determine date objects
         start_obj = parse_date(start_date) if start_date else None
         end_obj = parse_date(end_date) if end_date else None
         
-        # 2. Default Range Logic (if no filters provided)
+        # 2. Fetch Holidays for filtering
+        from app.repositories.leave_repository import LeaveRepository
+        leave_repo = LeaveRepository(self.db)
+        # We need a range that covers the possible data window
+        holidays = leave_repo.get_all_holidays() # Small table, okay to get all
+        holiday_dates = {h.date.isoformat() if hasattr(h.date, 'isoformat') else str(h.date) for h in holidays}
+
+        # 3. Default Range Logic
         if not start_obj and not end_obj:
             latest = self.attendance_repo.get_latest_date()
-            # Use max(latest, today) to handle future leave records, and 
-            # 90 days to be more generous with historical data.
             end_obj = max(latest, date.today()) if latest else date.today()
             start_obj = end_obj - timedelta(days=90)
         elif not start_obj:
@@ -274,7 +278,7 @@ class AttendanceService:
         elif not end_obj:
              end_obj = start_obj + timedelta(days=90)
 
-        # 3. Query based on role
+        # 4. Query based on role
         if user.role == UserRole.EMPLOYEE:
             records = self.attendance_repo.get_by_date_range(
                 emp_id=user.emp_id,
@@ -287,16 +291,28 @@ class AttendanceService:
                 end_date=end_obj
             )
             
-        # Enrich and flatten for frontend
+        # 5. Enrich, Filter and Flatten
         result = []
         for r in records:
-            data = {c.name: getattr(r, c.name) for c in r.__table__.columns}
-            # Support both date objects and ISO strings
-            if isinstance(data['date'], (date, datetime)):
-                data['date'] = data['date'].isoformat()
+            # Skip records that are on Sundays or Holidays and the employee was not present
+            # This logic was previously duplicated in multiple frontend components
+            date_iso = r.date.isoformat() if hasattr(r.date, 'isoformat') else str(r.date)
+            is_sunday = r.date.weekday() == 6 # Sunday is 6 in Python
+            is_holiday = date_iso in holiday_dates
             
-            # Resolve name (owner relationship takes priority)
+            if (is_sunday or is_holiday) and r.attendance_status != 'Present':
+                continue
+                
+            data = {c.name: getattr(r, c.name) for c in r.__table__.columns}
+            data['date'] = date_iso
+            
+            # Resolve name
             data['employee_name'] = (r.owner.full_name if r.owner else None) or r.employee_name
+            
+            # Classification helper (previously Type A vs Type B in frontend)
+            # True if it has a duration string with ':'. 
+            data['has_duration_details'] = bool(r.in_duration and ':' in r.in_duration)
+            
             result.append(data)
             
         return result

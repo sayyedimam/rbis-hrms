@@ -2,13 +2,32 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import get_settings
 settings = get_settings()
+from contextlib import asynccontextmanager
 from app.api.router import api_router
 from app.core.database import engine
 from app.models import Base
-# Sync Database Tables
-Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="RBIS HR Management System API", version="2.0.0")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Application lifespan events (startup/shutdown)"""
+    # Sync Database Tables on startup
+    try:
+        # In production, use migrations (alembic). In dev, create_all is convenient.
+        Base.metadata.create_all(bind=engine)
+    except Exception as e:
+        import sys
+        print(f"ERROR: Database connection failed: {e}", file=sys.stderr)
+        # We don't exit(1) here to allow the app to start even if DB is down,
+        # which can be useful for debugging or health checks.
+    
+    yield
+    # Shutdown logic (if any) here
+
+app = FastAPI(
+    title="RBIS HR Management System API", 
+    version="2.0.0",
+    lifespan=lifespan
+)
 
 # CORS Configuration - Use allowed origins from settings
 app.add_middleware(
@@ -19,7 +38,7 @@ app.add_middleware(
     allow_headers=["Content-Type", "Authorization"],
 )
 
-# Include Central Routerz
+# Include Central Router
 app.include_router(api_router)
 
 @app.get("/")

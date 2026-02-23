@@ -24,6 +24,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     isAdmin = false;
     canViewAll = false;
     showStatsCards = false;
+    holidaysLoaded = false;
     
     // Drill Down State
     showDrillDown = false;
@@ -121,6 +122,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
     private dailyChartStats: any[] = [];
     holidays: any[] = [];
+    upcomingHolidays: any[] = [];
 
     constructor(
         private attendanceService: AttendanceService,
@@ -131,9 +133,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
     ngOnInit() {
         const user = this.authService.currentUser;
-        this.isAdmin = this.authService.getUserRole() === 'SUPER_ADMIN';
-        const role = this.authService.getUserRole();
-        this.canViewAll = this.isAdmin || role === 'HR' || role === 'CEO';
+        this.isAdmin = this.authService.isSuperAdmin();
+        this.canViewAll = this.authService.isAtLeastHR();
         
         if (!this.canViewAll && user) {
             this.selectedEmp = user.emp_id;
@@ -142,6 +143,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
         // Fetch Holidays
         this.leaveService.getHolidays().subscribe(data => {
             this.holidays = data;
+            this.holidaysLoaded = true;
+            this.filterUpcomingHolidays();
              if (this.attendanceService.typeAData.length > 0) this.syncData();
         });
 
@@ -153,9 +156,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
         this.subs.add(this.authService.currentUser$.subscribe(u => {
             if (u) {
-                const r = u.role;
-                this.isAdmin = r === 'SUPER_ADMIN';
-                this.canViewAll = this.isAdmin || r === 'HR' || r === 'CEO';
+                this.isAdmin = this.authService.isSuperAdmin();
+                this.canViewAll = this.authService.isAtLeastHR();
                 
                 if (!this.canViewAll) {
                     this.selectedEmp = u.emp_id;
@@ -166,40 +168,28 @@ export class DashboardComponent implements OnInit, OnDestroy {
     }
 
     syncData() {
-        const dataA = this.attendanceService.typeAData;
-        const dataB = this.attendanceService.typeBData;
-        
-        const mergeMap = new Map();
-        [...dataA, ...dataB].forEach(rec => {
-            const key = `${rec.EmpID}_${rec.Date}`;
-            if (!mergeMap.has(key)) {
-                mergeMap.set(key, { ...rec });
-            } else {
-                const existing = mergeMap.get(key);
-                existing.In_Duration = existing.In_Duration || rec.In_Duration;
-                existing.Out_Duration = existing.Out_Duration || rec.Out_Duration;
-                if (rec.Attendance === 'Present') existing.Attendance = 'Present';
-            }
-        });
-
-        this.rawData = Array.from(mergeMap.values()).filter((rec: any) => {
-            const dateStr = String(rec.Date).split('T')[0];
-            const date = new Date(rec.Date);
-            
-            const isSunday = date.getDay() === 0;
-            const isHoliday = this.holidays.some(h => h.date === dateStr);
-
-            if ((isSunday || isHoliday) && rec.Attendance !== 'Present') {
-                return false; 
-            }
-            return true;
-        });
+        this.rawData = this.attendanceService.attendanceData;
         this.updateFilterOptions();
         this.applyFilters();
     }
 
     ngOnDestroy() {
         this.subs.unsubscribe();
+    }
+
+    private filterUpcomingHolidays() {
+        if (!this.holidays) return;
+        
+        const now = new Date();
+        const y = now.getFullYear();
+        const m = String(now.getMonth() + 1).padStart(2, '0');
+        const todayStr = now.toISOString().split('T')[0];
+        const currentMonthPrefix = `${y}-${m}`;
+
+        this.upcomingHolidays = this.holidays.filter(h => {
+            // Strictly check if it starts with "YYYY-MM" and is today or later
+            return h.date.startsWith(currentMonthPrefix) && h.date >= todayStr;
+        }).sort((a, b) => a.date.localeCompare(b.date));
     }
 
     updateFilterOptions() {

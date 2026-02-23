@@ -115,7 +115,11 @@
                   <button class="btn-edit" (click)="openEditModal(row)">
                     Edit
                   </button>
-                  <button class="btn-delete" (click)="deleteRecord(row.id)">
+                  <button
+                    class="btn-delete"
+                    (click)="deleteRecord(row.id)"
+                    *ngIf="isAdmin"
+                  >
                     Delete
                   </button>
                 </div>

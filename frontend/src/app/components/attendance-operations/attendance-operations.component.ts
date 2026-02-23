@@ -37,14 +37,12 @@ export class AttendanceOperationsComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit() {
-    const role = this.authService.getUserRole();
-    this.isAdmin = role === 'SUPER_ADMIN';
-    this.isHr = role === 'HR' || this.isAdmin;
-    this.isCeo = role === 'CEO' || this.isAdmin;
+    this.isAdmin = this.authService.isSuperAdmin();
+    this.isHr = this.authService.isAtLeastHR();
+    this.isCeo = this.authService.hasRole('CEO') || this.isAdmin;
 
     this.attendanceService.fetchAttendance();
-    this.subs.add(this.attendanceService.typeAData$.subscribe(() => this.syncData()));
-    this.subs.add(this.attendanceService.typeBData$.subscribe(() => this.syncData()));
+    this.subs.add(this.attendanceService.attendanceData$.subscribe(() => this.syncData()));
   }
 
   ngOnDestroy() {
@@ -52,22 +50,7 @@ export class AttendanceOperationsComponent implements OnInit, OnDestroy {
   }
 
   syncData() {
-    const dataA = this.attendanceService.typeAData;
-    const dataB = this.attendanceService.typeBData;
-    const mergeMap = new Map();
-    
-    [...dataA, ...dataB].forEach(rec => {
-      const key = `${rec.EmpID}_${rec.Date}`;
-      if (!mergeMap.has(key)) {
-        mergeMap.set(key, { ...rec });
-      } else {
-        const existing = mergeMap.get(key);
-        existing.In_Duration = existing.In_Duration || rec.In_Duration;
-        existing.Out_Duration = existing.Out_Duration || rec.Out_Duration;
-        if (rec.Attendance === 'Present') existing.Attendance = 'Present';
-      }
-    });
-    this.rawData = Array.from(mergeMap.values());
+    this.rawData = this.attendanceService.attendanceData;
   }
 
   get editBoardData() {

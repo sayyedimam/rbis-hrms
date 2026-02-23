@@ -60,6 +60,24 @@ class AdminService:
                     status_code=400,
                     detail="Employee ID or Email already exists"
                 )
+            
+        # CEO cannot edit sensitive identity fields
+        if admin.role == UserRole.CEO:
+            sensitive_fields = ['email', 'emp_id', 'full_name']
+            attempted_changes = [f for f in sensitive_fields if f in update_data and update_data[f] != getattr(employee, f)]
+            if attempted_changes:
+                raise HTTPException(
+                    status_code=403,
+                    detail=f"CEO cannot edit sensitive fields: {', '.join(attempted_changes)}"
+                )
+            
+        # Only Super Admin can assign roles
+        if 'role' in update_data and admin.role != UserRole.SUPER_ADMIN:
+            if update_data['role'] != employee.role: # Only block if role is actually changing
+                raise HTTPException(
+                    status_code=403,
+                    detail="Only Super Admin can assign or change roles"
+                )
         
         # Update fields
         email_changed = False

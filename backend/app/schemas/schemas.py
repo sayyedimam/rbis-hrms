@@ -39,9 +39,9 @@ class LoginRequest(BaseModel):
 class VerifyOTPRequest(BaseModel):
     """OTP verification validation schema"""
     email: EmailStr
-    otp_code: str = Field(..., min_length=6, max_length=6, description="6-digit OTP code")
+    code: str = Field(..., min_length=6, max_length=6, description="6-digit OTP code")
     
-    @field_validator('otp_code')
+    @field_validator('code')
     @classmethod
     def validate_otp(cls, v: str) -> str:
         """Validate OTP is numeric"""
@@ -58,7 +58,7 @@ class PasswordResetRequest(BaseModel):
 class PasswordResetConfirm(BaseModel):
     """Password reset confirmation validation"""
     email: EmailStr
-    otp_code: str = Field(..., min_length=6, max_length=6)
+    otp: str = Field(..., min_length=6, max_length=6)
     new_password: str = Field(
         ..., 
         min_length=8, 

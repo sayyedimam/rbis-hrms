@@ -32,6 +32,7 @@ export class LeaveManagementComponent implements OnInit {
     end_date: '',
     reason: ''
   };
+  totalLeaveDays: number = 0;
 
   // Roles
   isHr = false;
@@ -131,6 +132,7 @@ export class LeaveManagementComponent implements OnInit {
     this.isCeo = role === 'CEO' || role === 'SUPER_ADMIN';
     
     this.loadInitialData();
+    this.loadHolidays();
     if (this.isHr || this.isCeo) {
       this.loadGeneralExplorer();
     }
@@ -234,6 +236,56 @@ export class LeaveManagementComponent implements OnInit {
 
   getLeaveTypeName(id: number): string {
     return this.leaveTypes.find(t => t.id === id)?.name || 'Unknown';
+  }
+
+  onDateChange(): void {
+    if (this.newRequest.start_date && this.newRequest.end_date) {
+      this.totalLeaveDays = this.calculateLeaveDays(
+        new Date(this.newRequest.start_date),
+        new Date(this.newRequest.end_date)
+      );
+    } else {
+      this.totalLeaveDays = 0;
+    }
+  }
+
+  calculateLeaveDays(start: Date, end: Date): number {
+    if (start > end) return 0;
+    
+    let count = 0;
+    let curr = new Date(start);
+    
+    // Create a set of holiday dates for efficient lookup
+    const holidayDates = new Set(this.holidays.map(h => {
+        const d = new Date(h.date);
+        return d.toISOString().split('T')[0];
+    }));
+
+    while (curr <= end) {
+      const dayOfWeek = curr.getDay(); // 0 is Sunday, 6 is Saturday
+      const dateString = curr.toISOString().split('T')[0];
+      
+      let isHoliday = false;
+      
+      if (dayOfWeek === 0) { // Sunday
+        isHoliday = true;
+      } else if (dayOfWeek === 6) { // Saturday
+        const dayOfMonth = curr.getDate();
+        // 1st Saturday (1-7) or 3rd Saturday (15-21)
+        if ((dayOfMonth >= 1 && dayOfMonth <= 7) || (dayOfMonth >= 15 && dayOfMonth <= 21)) {
+          isHoliday = true;
+        }
+      } else if (holidayDates.has(dateString)) {
+        isHoliday = true;
+      }
+
+      if (!isHoliday) {
+        count++;
+      }
+      
+      curr.setDate(curr.getDate() + 1);
+    }
+    return count;
   }
 
   applyLeave(): void {

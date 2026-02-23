@@ -39,6 +39,17 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     except JWTError:
         raise credentials_exception
     
+    from app.core.config import settings
+    if email == settings.SUPER_ADMIN_EMAIL:
+        # Return a virtual employee object for super admin
+        return Employee(
+            email=email,
+            role=UserRole.SUPER_ADMIN,
+            full_name="Super Admin",
+            id=0, # Virtual ID
+            emp_id="SUPER_ADMIN"
+        )
+
     user = db.query(Employee).filter(Employee.email == email).first()
     if user is None:
         raise credentials_exception
@@ -74,8 +85,8 @@ def check_hr(user: Employee = Depends(get_current_user)) -> Employee:
     Raises:
         HTTPException: If user doesn't have HR role
     """
-    if user.role not in [UserRole.SUPER_ADMIN, UserRole.HR]:
-        raise HTTPException(status_code=403, detail="Only HR or Admin can perform this action")
+    if user.role not in [UserRole.SUPER_ADMIN, UserRole.HR, UserRole.CEO]:
+        raise HTTPException(status_code=403, detail="Only HR, CEO or Admin can perform this action")
     return user
 
 def check_ceo(user: Employee = Depends(get_current_user)) -> Employee:

@@ -2,7 +2,7 @@
 Authentication Endpoints (API v1)
 Handles user signup, login, OTP verification, and password reset
 """
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from app.api.dependencies import get_db
 from app.services.auth_service import AuthService
@@ -61,14 +61,14 @@ def verify_otp(req: VerifyOTPRequest, db: Session = Depends(get_db)):
     """
     try:
         service = AuthService(db)
-        return service.verify_otp(req.email, req.otp_code)
+        return service.verify_otp(req.email, req.code)
     except HTTPException as e:
         raise e
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
 @router.post("/forgot-password", response_model=MessageResponse)
-def forgot_password(req: PasswordResetRequest, db: Session = Depends(get_db)):
+def forgot_password(email: str = Query(...), db: Session = Depends(get_db)):
     """
     Request password reset OTP
     
@@ -82,7 +82,7 @@ def forgot_password(req: PasswordResetRequest, db: Session = Depends(get_db)):
     """
     try:
         service = AuthService(db)
-        result = service.forgot_password(req.email)
+        result = service.forgot_password(email)
         return MessageResponse(message=result["message"])
     except Exception:
         # Return generic response for security (don't reveal if user exists)
@@ -91,7 +91,12 @@ def forgot_password(req: PasswordResetRequest, db: Session = Depends(get_db)):
         )
 
 @router.post("/reset-password", response_model=MessageResponse)
-def reset_password(req: PasswordResetConfirm, db: Session = Depends(get_db)):
+def reset_password(
+    email: str = Query(...),
+    otp: str = Query(...),
+    new_password: str = Query(...),
+    db: Session = Depends(get_db)
+):
     """
     Reset password with OTP verification
     
@@ -106,7 +111,7 @@ def reset_password(req: PasswordResetConfirm, db: Session = Depends(get_db)):
     """
     try:
         service = AuthService(db)
-        result = service.reset_password(req.email, req.otp_code, req.new_password)
+        result = service.reset_password(email, otp, new_password)
         return MessageResponse(message=result["message"])
     except HTTPException as e:
         raise e
@@ -124,7 +129,7 @@ def verify(req: VerifyOTPRequest, db: Session = Depends(get_db)):
     """
     try:
         service = AuthService(db)
-        return service.verify_otp(req.email, req.otp_code)
+        return service.verify_otp(req.email, req.code)
     except HTTPException as e:
         raise e
 

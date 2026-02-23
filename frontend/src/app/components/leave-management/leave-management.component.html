@@ -123,7 +123,7 @@
       }}</span>
     </button>
     <button
-      *ngIf="isCeo"
+      *ngIf="isHr || isCeo"
       [class.active]="activeTab === 'explorer'"
       (click)="switchTab('explorer')"
     >
@@ -161,24 +161,52 @@
   <div class="tab-content" *ngIf="activeTab === 'apply'">
     <div class="form-card">
       <div class="form-group">
-        <label>Leave Type</label>
+        <label><i data-lucide="tag"></i> Leave Type</label>
         <div class="static-input">Paid Leave</div>
       </div>
       <div class="form-row">
         <div class="form-group">
-          <label>Start Date</label>
-          <input type="date" [(ngModel)]="newRequest.start_date" />
+          <label><i data-lucide="calendar"></i> From Date</label>
+          <input
+            type="date"
+            [(ngModel)]="newRequest.start_date"
+            name="startDate"
+            (change)="onDateChange()"
+            required
+          />
         </div>
         <div class="form-group">
-          <label>End Date</label>
-          <input type="date" [(ngModel)]="newRequest.end_date" />
+          <label><i data-lucide="calendar"></i> To Date</label>
+          <input
+            type="date"
+            [(ngModel)]="newRequest.end_date"
+            name="endDate"
+            (change)="onDateChange()"
+            required
+          />
+        </div>
+      </div>
+
+      <div class="day-counter-glass" *ngIf="totalLeaveDays > 0">
+        <div class="counter-icon">
+          <i data-lucide="calendar-check"></i>
+        </div>
+        <div class="counter-text">
+          <span class="count-label">Leave Duration</span>
+          <span class="count-value"
+            >{{ totalLeaveDays }}
+            {{ totalLeaveDays === 1 ? "Day" : "Days" }}</span
+          >
         </div>
       </div>
       <div class="form-group">
-        <label>Reason <span class="required">*</span></label>
+        <label
+          ><i data-lucide="message-square"></i> Reason
+          <span class="required">*</span></label
+        >
         <textarea
           [(ngModel)]="newRequest.reason"
-          placeholder="Briefly explain your reason (mandatory)..."
+          placeholder="Please provide a brief reason for your leave request..."
           required
         ></textarea>
       </div>

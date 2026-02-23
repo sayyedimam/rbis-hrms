@@ -30,31 +30,37 @@
       <tbody>
         <tr *ngFor="let emp of filteredEmployees">
           <td>
-            <ng-container *ngIf="editingEmployee?.id !== emp.id">
+            <ng-container
+              *ngIf="editingEmployee?.id !== emp.id || !isSuperAdmin"
+            >
               <span class="badge-id">{{ emp.emp_id }}</span>
             </ng-container>
             <input
-              *ngIf="editingEmployee?.id === emp.id"
+              *ngIf="editingEmployee?.id === emp.id && isSuperAdmin"
               [(ngModel)]="editingEmployee.emp_id"
               class="edit-input"
             />
           </td>
           <td>
-            <ng-container *ngIf="editingEmployee?.id !== emp.id">
+            <ng-container
+              *ngIf="editingEmployee?.id !== emp.id || !isSuperAdmin"
+            >
               {{ emp.full_name }}
             </ng-container>
             <input
-              *ngIf="editingEmployee?.id === emp.id"
+              *ngIf="editingEmployee?.id === emp.id && isSuperAdmin"
               [(ngModel)]="editingEmployee.full_name"
               class="edit-input"
             />
           </td>
           <td class="mobile-hide">
-            <ng-container *ngIf="editingEmployee?.id !== emp.id">
+            <ng-container
+              *ngIf="editingEmployee?.id !== emp.id || !isSuperAdmin"
+            >
               {{ emp.email }}
             </ng-container>
             <input
-              *ngIf="editingEmployee?.id === emp.id"
+              *ngIf="editingEmployee?.id === emp.id && isSuperAdmin"
               [(ngModel)]="editingEmployee.email"
               class="edit-input"
             />

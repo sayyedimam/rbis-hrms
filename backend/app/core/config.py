@@ -57,6 +57,19 @@ class Settings(BaseSettings):
     )
     
     # ========================================================================
+    # SUPER ADMIN CREDENTIALS
+    # ========================================================================
+    SUPER_ADMIN_EMAIL: str = Field(
+        ...,
+        description="Super Admin email for root access"
+    )
+    
+    SUPER_ADMIN_PASSWORD: str = Field(
+        ...,
+        description="Super Admin password for root access"
+    )
+
+    # ========================================================================
     # CORS
     # ========================================================================
     ALLOWED_ORIGINS_STR: str = Field(

@@ -21,16 +21,38 @@ export class AuthService {
   private apiUrl = `${environment.apiUrl}/auth`;
   private currentUserSubject = new BehaviorSubject<any>(null);
   public currentUser$ = this.currentUserSubject.asObservable();
+  
+  // High-level role-based subjects/observables
+  private userRoleSubject = new BehaviorSubject<string>(this.getInitialRole());
+  public userRole$ = this.userRoleSubject.asObservable();
 
   get currentUser() {
     return this.currentUserSubject.value;
   }
 
+  get userRole() {
+    return this.userRoleSubject.value;
+  }
+
   constructor(private http: HttpClient) {
     const savedUser = localStorage.getItem('currentUser');
     if (savedUser) {
-      this.currentUserSubject.next(JSON.parse(savedUser));
+      const user = JSON.parse(savedUser);
+      this.currentUserSubject.next(user);
+      this.userRoleSubject.next(user.role || '');
     }
+  }
+
+  private getInitialRole(): string {
+    const savedUser = localStorage.getItem('currentUser');
+    if (savedUser) {
+      try {
+        return JSON.parse(savedUser).role || '';
+      } catch (e) {
+        return '';
+      }
+    }
+    return '';
   }
 
   signup(userData: { email: string; password: string }): Observable<any> {
@@ -66,24 +88,49 @@ export class AuthService {
   logout() {
     localStorage.removeItem('currentUser');
     this.currentUserSubject.next(null);
+    this.userRoleSubject.next('');
   }
 
   private setSession(authRes: AuthResponse) {
-    // Store the nested user object for easier access
     const sessionData = {
       ...authRes.user,
       token: authRes.access_token
     };
     localStorage.setItem('currentUser', JSON.stringify(sessionData));
+    // Update role FIRST so downstream subscribers see correct role immediately
+    this.userRoleSubject.next(sessionData.role);
     this.currentUserSubject.next(sessionData);
   }
 
   isLoggedIn(): boolean {
-    return !!localStorage.getItem('currentUser');
+    return !!this.currentUser;
   }
 
   getUserRole(): string {
-    const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
-    return user.role || '';
+    return this.userRole;
+  }
+
+  hasRole(roles: string | string[]): boolean {
+    const currentRole = this.userRole;
+    if (Array.isArray(roles)) {
+      return roles.includes(currentRole);
+    }
+    return currentRole === roles;
+  }
+
+  isSuperAdmin(): boolean {
+    return this.userRole === 'SUPER_ADMIN';
+  }
+
+  isCeo(): boolean {
+    return this.userRole === 'CEO';
+  }
+
+  isHrOrAdmin(): boolean {
+    return ['SUPER_ADMIN', 'HR'].includes(this.userRole);
+  }
+
+  isAtLeastHR(): boolean {
+    return ['SUPER_ADMIN', 'HR', 'CEO'].includes(this.userRole);
   }
 }

@@ -50,7 +50,7 @@
         routerLink="/attendance-operations"
         routerLinkActive="active"
         class="nav-item"
-        *ngIf="isAdmin"
+        *ngIf="isAdmin || isCeo"
       >
         <i data-lucide="settings"></i> Operations
       </a>
@@ -84,6 +84,14 @@
         class="nav-item"
       >
         <i data-lucide="calendar"></i> Leaves
+      </a>
+      <a
+        routerLink="/role-management"
+        routerLinkActive="active"
+        class="nav-item"
+        *ngIf="isAdmin"
+      >
+        <i data-lucide="user-cog"></i> Role Assign
       </a>
       <!-- <a routerLink="/notices" routerLinkActive="active" class="nav-item">
         <i data-lucide="bell"></i> Notices

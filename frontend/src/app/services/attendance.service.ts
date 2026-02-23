@@ -10,17 +10,20 @@ export class AttendanceService {
   private apiUrl = environment.apiUrl;
 
   // Subjects for in-memory data state
-  private typeADataSubject = new BehaviorSubject<any[]>([]);
-  private typeBDataSubject = new BehaviorSubject<any[]>([]);
+  private attendanceDataSubject = new BehaviorSubject<any[]>([]);
   private hasDataSubject = new BehaviorSubject<boolean>(false);
 
   // Observables
-  typeAData$ = this.typeADataSubject.asObservable();
-  typeBData$ = this.typeBDataSubject.asObservable();
+  attendanceData$ = this.attendanceDataSubject.asObservable();
   hasData$ = this.hasDataSubject.asObservable();
 
-  get typeAData() { return this.typeADataSubject.value; }
-  get typeBData() { return this.typeBDataSubject.value; }
+  get attendanceData() { return this.attendanceDataSubject.value; }
+
+  // Backward compatibility for old components (will return filtered versions of the same stream)
+  get typeAData() { return this.attendanceDataSubject.value.filter(d => d.In_Duration && d.In_Duration.includes(':')); }
+  get typeBData() { return this.attendanceDataSubject.value.filter(d => !d.In_Duration || !d.In_Duration.includes(':')); }
+  typeAData$ = this.attendanceData$;
+  typeBData$ = this.attendanceData$;
 
   constructor(private http: HttpClient) { }
 
@@ -71,13 +74,8 @@ export class AttendanceService {
 
     this.http.get<any[]>(`${this.apiUrl}/attendance/`, { params }).subscribe({
       next: (data) => {
-        // Distribute data based on source or type
-        // For now, we'll put all into typeA if it has In_Duration, otherwise typeB
-        const typeA = data.filter(d => d.in_duration && d.in_duration.includes(':'));
-        const typeB = data.filter(d => !d.in_duration || !d.in_duration.includes(':'));
-        
-        // Map backend fields to frontend expected fields (Shared for both)
-        const mappedA = typeA.map(d => ({
+        // Map backend fields to frontend expected fields
+        const mappedData = data.map(d => ({
           id: d.id,
           Date: d.date,
           EmpID: d.emp_id,
@@ -88,37 +86,19 @@ export class AttendanceService {
           Last_Out: d.last_out,
           Punch_Records: d.punch_records,
           Attendance: d.attendance_status,
-          Employee_Name: d.employee_name
+          Employee_Name: d.employee_name,
+          has_duration_details: d.has_duration_details
         }));
 
-        const mappedB = typeB.map(d => ({
-          id: d.id,
-          Date: d.date,
-          EmpID: d.emp_id,
-          In_Duration: d.in_duration,
-          Out_Duration: d.out_duration,
-          Total_Duration: d.total_duration,
-          First_In: d.first_in,
-          Last_Out: d.last_out,
-          Punch_Records: d.punch_records,
-          Attendance: d.attendance_status,
-          Employee_Name: d.employee_name
-        }));
-
-        this.typeADataSubject.next(mappedA);
-        this.typeBDataSubject.next(mappedB);
+        this.attendanceDataSubject.next(mappedData);
         this.checkDataAvailability();
       },
       error: (err) => console.error('Error fetching attendance', err)
     });
   }
 
-  setAttendanceData(type: 'typeA' | 'typeB', data: any[]) {
-    if (type === 'typeA') {
-      this.typeADataSubject.next(data);
-    } else {
-      this.typeBDataSubject.next(data);
-    }
+  setAttendanceData(data: any[]) {
+    this.attendanceDataSubject.next(data);
     this.checkDataAvailability();
   }
 
@@ -127,15 +107,12 @@ export class AttendanceService {
   }
 
   private checkDataAvailability() {
-    const hasA = this.typeADataSubject.value.length > 0;
-    const hasB = this.typeBDataSubject.value.length > 0;
-    this.hasDataSubject.next(hasA || hasB);
+    this.hasDataSubject.next(this.attendanceDataSubject.value.length > 0);
   }
 
   getCurrentData() {
     return {
-      typeA: this.typeADataSubject.value,
-      typeB: this.typeBDataSubject.value
+      attendance: this.attendanceDataSubject.value
     };
   }
 }

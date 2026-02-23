@@ -17,6 +17,8 @@ python-dotenv==1.0.1
 azure-storage-blob==12.24.0
 aiohttp==3.9.5
 psycopg2-binary==2.9.9
+pytest==8.3.4
+httpx==0.28.1
 # Note: Azure App Service (Linux) requires ODBC Driver 18 for SQL Server
 # This is pre-installed on Azure, but ensure your connection string specifies:
 # driver=ODBC+Driver+18+for+SQL+Server

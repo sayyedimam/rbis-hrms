@@ -1,0 +1,66 @@
+<div class="role-management-container">
+  <div class="page-header">
+    <h2>Role Assignment Management</h2>
+    <p>Manage and assign system roles to employees</p>
+  </div>
+
+  <div class="search-bar">
+    <div class="search-input-wrapper">
+      <i class="search-icon">🔍</i>
+      <input
+        type="text"
+        [(ngModel)]="searchTerm"
+        (input)="applyFilter()"
+        placeholder="Search by Emp ID, Email, or Name..."
+      />
+    </div>
+  </div>
+
+  <div class="table-container" [class.loading]="loading">
+    <div *ngIf="loading" class="spinner-overlay">
+      <div class="spinner"></div>
+    </div>
+
+    <table class="role-table">
+      <thead>
+        <tr>
+          <th>Emp ID</th>
+          <th>Full Name</th>
+          <th>Email</th>
+          <th>Current Role</th>
+          <th>Action (Assign Role)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let emp of filteredEmployees">
+          <td>
+            <span class="badge emp-id-badge">{{ emp.emp_id || "N/A" }}</span>
+          </td>
+          <td>{{ emp.full_name || "N/A" }}</td>
+          <td>{{ emp.email }}</td>
+          <td>
+            <span class="badge role-badge" [class]="emp.role.toLowerCase()">
+              {{ emp.role }}
+            </span>
+          </td>
+          <td>
+            <select
+              [ngModel]="emp.role"
+              (ngModelChange)="updateRole(emp, $event)"
+              class="role-select"
+            >
+              <option *ngFor="let role of roles" [value]="role">
+                {{ role }}
+              </option>
+            </select>
+          </td>
+        </tr>
+        <tr *ngIf="filteredEmployees.length === 0 && !loading">
+          <td colspan="5" class="no-data">
+            No employees found matches your search.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

@@ -997,3 +997,159 @@
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
     border-color: #4f46e5;
 }
+
+/* Upcoming Holidays Section */
+.holidays-container {
+    background: white;
+    padding: 1.5rem 2rem;
+    border-radius: 16px;
+    margin-bottom: 2rem;
+    border: 1px solid #f1f5f9;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    animation: fadeIn 0.4s ease-out;
+}
+
+.holidays-container.bottom-section {
+    margin-top: 2rem;
+    max-width: 400px;
+    margin-left: 0;
+}
+
+.holidays-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.25rem;
+}
+
+.h-title {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: #1e293b;
+}
+
+.h-title i {
+    color: #f59e0b;
+    width: 22px;
+}
+
+.h-title h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+.month-label {
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: #64748b;
+    background: #f1f5f9;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    text-transform: uppercase;
+}
+
+.holidays-column {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.holiday-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem 1.25rem;
+    background: #f8fafc;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    transition: all 0.2s;
+}
+
+.holiday-item:hover {
+    background: white;
+    border-color: #4f46e5;
+    transform: translateX(4px);
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.08);
+}
+
+.h-date {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: white;
+    padding: 0.4rem 0.6rem;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    min-width: 45px;
+}
+
+.h-date .day {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: #1e293b;
+    line-height: 1;
+}
+
+.h-date .mon {
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+    margin-top: 2px;
+}
+
+.h-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.h-name {
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: #1e293b;
+}
+
+.h-type {
+    font-size: 0.75rem;
+    color: #64748b;
+    font-weight: 500;
+}
+
+.no-holidays-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1rem;
+    color: #94a3b8;
+    background: #f8fafc;
+    border-radius: 12px;
+    border: 1px dashed #e2e8f0;
+    margin-top: 0.5rem;
+}
+
+.no-holidays-placeholder i {
+    width: 24px;
+    height: 24px;
+    margin-bottom: 0.5rem;
+    opacity: 0.6;
+}
+
+.no-holidays-placeholder p {
+    margin: 0;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+@media (max-width: 768px) {
+    .holidays-container {
+        padding: 1rem;
+    }
+    
+    .holidays-container.bottom-section {
+        max-width: 100%;
+    }
+}

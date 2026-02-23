@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
@@ -22,12 +22,15 @@
       safeCreateIcons();
 
       // Watch for DOM changes to re-initialize icons in Angular SPA
+      let timeout;
       const observer = new MutationObserver((mutations) => {
-        // Disconnect to avoid infinite loop when Lucide modifies the DOM
-        observer.disconnect();
-        safeCreateIcons();
-        // Re-observe
-        observer.observe(document.body, { childList: true, subtree: true });
+        // Debounce to prevent multiple hits during single change cycle
+        clearTimeout(timeout);
+        timeout = setTimeout(() => {
+          observer.disconnect();
+          safeCreateIcons();
+          observer.observe(document.body, { childList: true, subtree: true });
+        }, 50);
       });
 
       observer.observe(document.body, { childList: true, subtree: true });

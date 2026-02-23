@@ -1,4 +1,57 @@
 <div class="module-view-padding">
+  <div class="dashboard-header">
+    <h2 class="section-title">Workforce Overview</h2>
+  </div>
+
+  <!-- Filters Bar -->
+  <div class="filter-bar" *ngIf="!loading">
+    <div class="filter-group date-range">
+      <label><i data-lucide="calendar"></i> Date Range</label>
+      <div class="range-inputs">
+        <input
+          type="date"
+          [(ngModel)]="fromDate"
+          (change)="applyFilters()"
+          placeholder="From"
+        />
+        <span class="range-sep">to</span>
+        <input
+          type="date"
+          [(ngModel)]="toDate"
+          (change)="applyFilters()"
+          placeholder="To"
+        />
+      </div>
+    </div>
+
+    <!-- Admin Search Option -->
+    <div class="filter-group search-context" *ngIf="canViewAll">
+      <label><i data-lucide="user-search"></i> Context Search</label>
+      <div class="search-input-wrapper">
+        <input
+          type="text"
+          [(ngModel)]="searchTerm"
+          placeholder="Search Emp ID or Name..."
+          (keyup.enter)="applyFilters()"
+        />
+        <i
+          data-lucide="search"
+          class="search-icon"
+          (click)="applyFilters()"
+          style="cursor: pointer; pointer-events: auto"
+        ></i>
+      </div>
+    </div>
+
+    <button
+      class="reset-btn"
+      (click)="resetFilters()"
+      *ngIf="fromDate || toDate || searchTerm || (canViewAll && selectedEmp)"
+    >
+      Clear
+    </button>
+  </div>
+
   <div class="no-data-msg" *ngIf="!hasData && !loading">
     <i data-lucide="database"></i>
     <h3>No Records Found</h3>
@@ -6,59 +59,6 @@
   </div>
 
   <div class="data-view" *ngIf="hasData || loading">
-    <div class="dashboard-header">
-      <h2 class="section-title">Workforce Overview</h2>
-    </div>
-
-    <!-- Filters Bar -->
-    <div class="filter-bar" *ngIf="!loading && hasData">
-      <div class="filter-group date-range">
-        <label><i data-lucide="calendar"></i> Date Range</label>
-        <div class="range-inputs">
-          <input
-            type="date"
-            [(ngModel)]="fromDate"
-            (change)="applyFilters()"
-            placeholder="From"
-          />
-          <span class="range-sep">to</span>
-          <input
-            type="date"
-            [(ngModel)]="toDate"
-            (change)="applyFilters()"
-            placeholder="To"
-          />
-        </div>
-      </div>
-
-      <!-- Admin Search Option -->
-      <div class="filter-group search-context" *ngIf="canViewAll">
-        <label><i data-lucide="user-search"></i> Context Search</label>
-        <div class="search-input-wrapper">
-          <input
-            type="text"
-            [(ngModel)]="searchTerm"
-            placeholder="Search Emp ID or Name..."
-            (keyup.enter)="applyFilters()"
-          />
-          <i
-            data-lucide="search"
-            class="search-icon"
-            (click)="applyFilters()"
-            style="cursor: pointer; pointer-events: auto"
-          ></i>
-        </div>
-      </div>
-
-      <button
-        class="reset-btn"
-        (click)="resetFilters()"
-        *ngIf="fromDate || toDate || searchTerm || (canViewAll && selectedEmp)"
-      >
-        Clear
-      </button>
-    </div>
-
     <div class="active-profile-row" *ngIf="activeEmployee">
       <div class="profile-info">
         <div class="avatar-small">{{ activeEmployee.Name[0] }}</div>
@@ -74,7 +74,8 @@
     <app-stats-grid
       *ngIf="!loading && hasData && showStatsCards"
       [stats]="stats"
-      (onStatusClick)="viewStatusDetails($event)">
+      (onStatusClick)="viewStatusDetails($event)"
+    >
     </app-stats-grid>
 
     <!-- Charts Grid (Restored) -->
@@ -181,6 +182,38 @@
     <div class="loading-state" *ngIf="loading">
       <div class="spinner"></div>
       <p>Analyzing workforce data...</p>
+    </div>
+  </div>
+
+  <!-- Upcoming Holidays Section (Bottom Column) -->
+  <div
+    class="holidays-container bottom-section"
+    *ngIf="holidaysLoaded && !loading"
+  >
+    <div class="holidays-header">
+      <div class="h-title">
+        <i data-lucide="party-popper"></i>
+        <h3>Upcoming Holidays</h3>
+      </div>
+      <span class="month-label">This Month</span>
+    </div>
+
+    <div class="holidays-column" *ngIf="upcomingHolidays.length > 0">
+      <div class="holiday-item" *ngFor="let h of upcomingHolidays">
+        <div class="h-date">
+          <span class="day">{{ h.date | date: "dd" }}</span>
+          <span class="mon">{{ h.date | date: "MMM" }}</span>
+        </div>
+        <div class="h-info">
+          <span class="h-name">{{ h.name }}</span>
+          <span class="h-type">{{ h.type || "Public Holiday" }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="no-holidays-placeholder" *ngIf="upcomingHolidays.length === 0">
+      <i data-lucide="calendar-off"></i>
+      <p>No remaining holidays this month</p>
     </div>
   </div>
 </div>

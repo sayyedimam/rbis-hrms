@@ -118,7 +118,19 @@ class AuthService:
         
         self.employee_repo.update(user)
         
-        return {"message": "OTP verified successfully"}
+        access_token = create_access_token(data={"sub": user.email})
+        
+        return {
+            "access_token": access_token,
+            "token_type": "bearer",
+            "user": {
+                "emp_id": user.emp_id or "PENDING",
+                "email": user.email,
+                "role": user.role,
+                "full_name": user.full_name
+            },
+            "message": "OTP verified successfully"
+        }
     
     def login(self, email: str, password: str) -> dict:
         """
@@ -134,11 +146,27 @@ class AuthService:
         Raises:
             HTTPException: If credentials are invalid or account not verified
         """
+        from app.core.config import settings
+        
+        # Check for environment-based super admin root access
+        if email == settings.SUPER_ADMIN_EMAIL and password == settings.SUPER_ADMIN_PASSWORD:
+            access_token = create_access_token(data={"sub": email})
+            return {
+                "access_token": access_token,
+                "token_type": "bearer",
+                "user": {
+                    "emp_id": "SUPER_ADMIN",
+                    "email": email,
+                    "role": UserRole.SUPER_ADMIN,
+                    "full_name": "Super Admin"
+                }
+            }
+            
         user = self.employee_repo.get_by_email(email)
         
         if not user or not verify_password(password, user.password_hash):
             raise HTTPException(
-                status_code=400,
+                status_code=401,
                 detail="Invalid email or password"
             )
         

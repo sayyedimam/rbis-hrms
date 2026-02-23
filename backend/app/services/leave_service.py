@@ -58,6 +58,10 @@ class LeaveService:
         Returns:
             List of leave balances
         """
+        # Super Admin is a virtual user with no DB record — skip balance logic
+        if emp_id == "SUPER_ADMIN":
+            return []
+        
         if year is None:
             year = datetime.now().year
         
@@ -284,20 +288,63 @@ class LeaveService:
             raise HTTPException(status_code=400, detail="Start date cannot be after end date")
     
     def _calculate_work_days(self, start: date, end: date) -> int:
-        """Calculate work days (excluding weekends)"""
+        """Calculate work days (excluding weekends and holidays)"""
+        # Fetch public holidays in the range
+        public_holidays = self.db.query(Holiday.date).filter(
+            Holiday.date >= start,
+            Holiday.date <= end
+        ).all()
+        holiday_dates = {h.date for h in public_holidays}
+        
         days = 0
         curr = start
         while curr <= end:
-            if curr.weekday() < 5:  # Monday to Friday
-                days += 1
+            # 1. Check if it's a Sunday (always holiday)
+            if curr.weekday() == 6:
+                curr += timedelta(days=1)
+                continue
+                
+            # 2. Check if it's a Saturday
+            if curr.weekday() == 5:
+                # 1st Saturday (date 1-7) or 3rd Saturday (date 15-21) are holidays
+                if (1 <= curr.day <= 7) or (15 <= curr.day <= 21):
+                    curr += timedelta(days=1)
+                    continue
+            
+            # 3. Check if it's a public holiday
+            if curr in holiday_dates:
+                curr += timedelta(days=1)
+                continue
+                
+            # If none of the above, it's a work day
+            days += 1
             curr += timedelta(days=1)
         return days
     
     def _sync_attendance_on_approval(self, request) -> None:
-        """Mark attendance as 'On Leave' for approved dates"""
+        """Mark attendance as 'On Leave' for approved dates, skipping holidays"""
+        # Fetch public holidays in the range
+        public_holidays = self.db.query(Holiday.date).filter(
+            Holiday.date >= request.start_date,
+            Holiday.date <= request.end_date
+        ).all()
+        holiday_dates = {h.date for h in public_holidays}
+        
         curr = request.start_date
         while curr <= request.end_date:
-            if curr.weekday() < 5:
+            is_holiday = False
+            # Sunday
+            if curr.weekday() == 6:
+                is_holiday = True
+            # 1st/3rd Saturday
+            elif curr.weekday() == 5:
+                if (1 <= curr.day <= 7) or (15 <= curr.day <= 21):
+                    is_holiday = True
+            # Public Holiday
+            elif curr in holiday_dates:
+                is_holiday = True
+                
+            if not is_holiday:
                 existing = self.attendance_repo.get_by_emp_and_date(request.emp_id, curr)
                 
                 if existing:

@@ -20,6 +20,7 @@ class EmployeeUpdate(BaseModel):
     emp_id: Optional[str] = None
     email: Optional[str] = None
     phone_number: Optional[str] = None
+    role: Optional[str] = None
 
 @router.get("/employees")
 async def get_employees(
