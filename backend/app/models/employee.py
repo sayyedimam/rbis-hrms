@@ -29,7 +29,7 @@ class Employee(Base):
     full_name = Column(String(200), nullable=True)
     first_name = Column(String(100), nullable=True)
     last_name = Column(String(100), nullable=True)
-    phone_number = Column(String(20), nullable=True)
+    phone_number = Column(String(20), unique=True, nullable=True)
     email = Column(String(150), unique=True, index=True, nullable=True)
     designation = Column(String(100), nullable=True)
     password_hash = Column(String(255), nullable=True)

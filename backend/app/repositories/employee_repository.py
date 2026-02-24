@@ -129,3 +129,27 @@ class EmployeeRepository:
             True if employee exists, False otherwise
         """
         return self.db.query(Employee).filter(Employee.emp_id == emp_id).first() is not None
+
+    def get_by_phone(self, phone_number: str) -> Optional[Employee]:
+        """
+        Get employee by phone number
+        
+        Args:
+            phone_number: Phone number to check
+            
+        Returns:
+            Employee object or None if not found
+        """
+        return self.db.query(Employee).filter(Employee.phone_number == phone_number).first()
+
+    def exists_by_phone(self, phone_number: str) -> bool:
+        """
+        Check if employee exists by phone number
+        
+        Args:
+            phone_number: Phone number to check
+            
+        Returns:
+            True if employee exists, False otherwise
+        """
+        return self.db.query(Employee).filter(Employee.phone_number == phone_number).first() is not None
