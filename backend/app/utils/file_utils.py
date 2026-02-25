@@ -52,15 +52,17 @@ def normalize_emp_id(raw_id: str) -> str:
     Normalize employee ID to RBIS0000 format
     
     Args:
-        raw_id: Raw employee ID from file
+        raw_id: Raw employee ID from file (e.g. '0058', 'RBIS0058', '58', '00100')
         
     Returns:
-        Normalized employee ID
+        Normalized employee ID in RBISxxxx format, or empty string if invalid
         
     Examples:
-        'RBIS1' -> 'RBIS0001'
-        '123' -> 'RBIS0123'
+        'RBIS1'    -> 'RBIS0001'
+        '0058'     -> 'RBIS0058'
+        '123'      -> 'RBIS0123'
         'rbis0045' -> 'RBIS0045'
+        '00100'    -> ''  (invalid: maps to 100, which is > 4 digits when the DB has 4-digit IDs only)
     """
     raw_id = str(raw_id).strip()
     
@@ -70,12 +72,19 @@ def normalize_emp_id(raw_id: str) -> str:
     # Already in RBIS format
     if raw_id.upper().startswith('RBIS'):
         num_part = ''.join(filter(str.isdigit, raw_id))
-        return f"RBIS{num_part.zfill(4)}"
+        if not num_part:
+            return ''
+        num = int(num_part)
+        return f"RBIS{num:04d}"
     
-    # Pure number
+    # Pure number — auto-prefix with RBIS
     elif raw_id.isdigit():
-        return f"RBIS{raw_id.zfill(4)}"
+        num = int(raw_id)
+        if num < 1 or num > 9999:
+            return ''  # Out of valid range for 4-digit format
+        return f"RBIS{num:04d}"
     
-    # Other format
+    # Other format — can't normalize
     else:
-        return raw_id.upper()
+        return ''
+

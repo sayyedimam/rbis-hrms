@@ -247,6 +247,10 @@
   background: #eff6ff;
   color: #3b82f6;
 }
+.status-badge.machine {
+  background: #fff7ed;
+  color: #c2410c;
+}
 
 .name-cell {
   font-weight: 700;

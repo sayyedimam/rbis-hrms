@@ -710,6 +710,7 @@
 
 .status-badge.present { background: #eef2ff; color: #4f46e5; }
 .status-badge.absent { background: #fef2f2; color: #ef4444; }
+.status-badge.machine { background: #fff7ed; color: #c2410c; }
 .status-badge.on, .status-badge.leave { background: #f0f9ff; color: #0284c7; } 
 .status-badge.half { background: #fff7ed; color: #ea580c; }
 

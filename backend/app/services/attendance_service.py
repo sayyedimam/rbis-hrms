@@ -102,28 +102,40 @@ class AttendanceService:
                 "reason": detected_type
             }
         
-        # 1. PRE-VALIDATION: Check all records before doing ANY external operations
+        # 1. PRE-VALIDATION: Normalize IDs and filter out invalid records
         import re
-        validation_errors = []
+        valid_records = []
+        skipped_records = []
         for i, rec in enumerate(cleaned_data):
             raw_id = rec.get('EmpID', '')
             emp_id = normalize_emp_id(raw_id)
             
-            # STRICT PATTERN MATCH: Must be RBIS followed by exactly 4 digits
-            if not re.match(r'^RBIS\d{4}$', emp_id):
-                validation_errors.append(f"Record {i+1}: Invalid ID format '{raw_id}' (Must follow RBISxxxx pattern)")
+            # Check if the normalized ID is valid (RBIS followed by exactly 4 digits)
+            if not emp_id or not re.match(r'^RBIS\d{4}$', emp_id):
+                skipped_records.append(f"Record {i+1}: Skipped invalid ID '{raw_id}'")
+                continue
             
             if not rec.get('Date'):
-                validation_errors.append(f"Record {i+1}: Missing attendance date")
+                skipped_records.append(f"Record {i+1}: Skipped — missing attendance date")
+                continue
+            
+            # Update the record with the normalized ID
+            rec['EmpID'] = emp_id
+            valid_records.append(rec)
         
-        if validation_errors:
-            error_msg = "; ".join(validation_errors[:3]) + (f" (+{len(validation_errors)-3} more)" if len(validation_errors) > 3 else "")
-            logger.error(f"[ERROR] Validation failed for {file.filename}: {error_msg}")
+        if skipped_records:
+            logger.warning(f"[WARN] {file.filename}: Skipped {len(skipped_records)} invalid records: {'; '.join(skipped_records[:5])}")
+        
+        if not valid_records:
+            logger.error(f"[ERROR] {file.filename}: No valid records found after filtering")
             return {
                 "filename": file.filename,
                 "status": "error",
-                "reason": f"Data Validation Error: {error_msg}"
+                "reason": "No valid attendance records found in the file. All records had invalid Employee IDs or missing dates."
             }
+        
+        # Replace cleaned_data with only the valid records
+        cleaned_data = valid_records
 
         # 2. FILE LOGGING (DB Entry for the file)
         # We check if hash exists to avoid duplicate WORK, not just duplicate FILES.
@@ -168,11 +180,16 @@ class AttendanceService:
             self.attendance_repo.commit()
             logger.info(f"Completed processing {file.filename}: Saved {saved_count}, Updated {updated_count}")
             
+            skipped_count = len(skipped_records)
+            details = f"Processed {len(cleaned_data)} records (Saved: {saved_count}, Updated: {updated_count})"
+            if skipped_count:
+                details += f", Skipped: {skipped_count} invalid records"
+            
             return {
                 "filename": file.filename,
                 "status": "success",
                 "type": detected_type,
-                "details": f"Processed {len(cleaned_data)} records (Saved: {saved_count}, Updated: {updated_count})"
+                "details": details
             }
         except Exception as e:
             logger.error(f"Database error processing records for {file.filename}: {e}")
@@ -272,11 +289,11 @@ class AttendanceService:
         if not start_obj and not end_obj:
             latest = self.attendance_repo.get_latest_date()
             end_obj = max(latest, date.today()) if latest else date.today()
-            start_obj = end_obj - timedelta(days=90)
+            start_obj = end_obj - timedelta(days=31)
         elif not start_obj:
-             start_obj = end_obj - timedelta(days=90)
+             start_obj = end_obj - timedelta(days=31)
         elif not end_obj:
-             end_obj = start_obj + timedelta(days=90)
+             end_obj = start_obj + timedelta(days=31)
 
         # 4. Query based on role
         if user.role == UserRole.EMPLOYEE:
@@ -291,16 +308,25 @@ class AttendanceService:
                 end_date=end_obj
             )
             
+        # Helper: check if a date is a non-working day (Sunday, 1st/3rd Saturday, or public holiday)
+        def is_non_working_day(d, holiday_set):
+            if d.weekday() == 6:  # Sunday
+                return True
+            if d.weekday() == 5:  # Saturday
+                if (1 <= d.day <= 7) or (15 <= d.day <= 21):  # 1st or 3rd Saturday
+                    return True
+            iso = d.isoformat() if hasattr(d, 'isoformat') else str(d)
+            if iso in holiday_set:
+                return True
+            return False
+        
         # 5. Enrich, Filter and Flatten
         result = []
         for r in records:
-            # Skip records that are on Sundays or Holidays and the employee was not present
-            # This logic was previously duplicated in multiple frontend components
             date_iso = r.date.isoformat() if hasattr(r.date, 'isoformat') else str(r.date)
-            is_sunday = r.date.weekday() == 6 # Sunday is 6 in Python
-            is_holiday = date_iso in holiday_dates
             
-            if (is_sunday or is_holiday) and r.attendance_status != 'Present':
+            # Skip non-working days where employee was not present
+            if is_non_working_day(r.date, holiday_dates) and r.attendance_status != 'Present':
                 continue
                 
             data = {c.name: getattr(r, c.name) for c in r.__table__.columns}
@@ -314,6 +340,22 @@ class AttendanceService:
             data['has_duration_details'] = bool(r.in_duration and ':' in r.in_duration)
             
             result.append(data)
+        
+        # 6. MACHINE ERROR DETECTION
+        # If ALL employees were absent on a WORKING day, it's likely a machine error.
+        # Group records by date and check.
+        from collections import defaultdict
+        date_groups = defaultdict(list)
+        for rec in result:
+            date_groups[rec['date']].append(rec)
+        
+        for dt, recs in date_groups.items():
+            # Only check working days (non-working days were already filtered above)
+            all_absent = all(r.get('attendance_status') == 'Absent' for r in recs)
+            if all_absent and len(recs) > 0:
+                logger.warning(f"[MACHINE ERROR] All {len(recs)} employees marked absent on {dt} — likely a machine error")
+                for r in recs:
+                    r['attendance_status'] = 'Machine Error'
             
         return result
     
