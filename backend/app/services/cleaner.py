@@ -101,16 +101,39 @@ def detect_and_clean_memory(file_content):
                             if not emp_id_raw or emp_id_raw.lower() == 'nan':
                                 return None, f"Invalid Record at row {index+1}: Missing Employee ID"
 
-                            # Parse First In / Last Out from Punches
+                            # Parse First In / Last Out from Punches based on tags
                             first_in, last_out = "--:--", "--:--"
                             punch_count = 0
                             if punch_log and punch_log.lower() != 'nan':
+                                # Check if tags (in)/(out) exist in the log
+                                has_tags = "(in)" in punch_log.lower() or "(out)" in punch_log.lower()
+                                
                                 clean_punches = re.sub(r'\(in\)|\(out\)', '', punch_log, flags=re.IGNORECASE)
                                 times = [t.strip() for t in clean_punches.split(',') if ':' in t]
+                                
                                 if times:
-                                    first_in = times[0]
-                                    last_out = times[-1]
                                     punch_count = len(times)
+                                    if has_tags:
+                                        # Specific Logic: First In is the first (in) punch
+                                        # Last Out is the last (out) punch
+                                        raw_punches = [p.strip() for p in punch_log.split(',')]
+                                        
+                                        # First In: Look for first (in) or fallback to times[0]
+                                        in_punches = [p.replace('(in)','').replace('(IN)','').strip() for p in raw_punches if '(in)' in p.lower()]
+                                        first_in = in_punches[0] if in_punches else times[0]
+                                        
+                                        # Last Out: Look for last (out) or fallback to '--:--' if strictly ends with (in)
+                                        out_punches = [p.replace('(out)','').replace('(OUT)','').strip() for p in raw_punches if '(out)' in p.lower()]
+                                        if out_punches:
+                                            last_out = out_punches[-1]
+                                        elif punch_log.strip().lower().endswith('(in)'):
+                                            last_out = "--:--"
+                                        else:
+                                            last_out = times[-1]
+                                    else:
+                                        # Fallback for logs without tags
+                                        first_in = times[0]
+                                        last_out = times[-1]
 
                             # Fallback
                             if first_in == "--:--" and ":" in in_dur: first_in = in_dur
@@ -137,8 +160,31 @@ def detect_and_clean_memory(file_content):
                             if not current_attendance_date:
                                 return None, f"Invalid State: Record found before Date header at row {index+1}"
 
-                            is_absent = in_dur.lower() in ['00:00', '0:00', '', 'nan', 'none', 'nil', '-']
-                            is_present = not is_absent and punch_count >= 4
+                            is_absent_raw = in_dur.lower() in ['00:00', '0:00', '', 'nan', 'none', 'nil', '-']
+                            
+                            # Check for "Missing Out Punch" strictness
+                            # If the last punch in the record doesn't have an (out) tag or if we have an odd number of punches
+                            # (Note: The cleaner currently strips (in)/(out) tags to get times, so we check punch count 
+                            # and potentially look at the raw log if the raw log is available)
+                            
+                            has_missing_out_punch = False
+                            if punch_log and punch_log.lower() != 'nan':
+                                # If the raw log ends with (in), it's definitely a missing out-punch
+                                if punch_log.strip().lower().endswith('(in)'):
+                                    has_missing_out_punch = True
+                                # Even without tags, an odd number of punches usually implies a missing punch
+                                elif punch_count % 2 != 0:
+                                    has_missing_out_punch = True
+
+                            # New Strict Integrity Logic:
+                            # 1. Must NOT have a missing out-punch
+                            # 2. Must have > 4 hours of In_Duration
+                            # 3. Must have at least 4 punches
+                            duration_mins = to_min(in_dur)
+                            is_present = (not is_absent_raw 
+                                         and not has_missing_out_punch 
+                                         and duration_mins > 240 # 4 hours * 60 mins
+                                         and punch_count >= 4)
 
                             cleaned_data.append({
                                 'Date': current_attendance_date,

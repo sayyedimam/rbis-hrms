@@ -351,11 +351,19 @@ class AttendanceService:
         
         for dt, recs in date_groups.items():
             # Only check working days (non-working days were already filtered above)
-            all_absent = all(r.get('attendance_status') == 'Absent' for r in recs)
-            if all_absent and len(recs) > 0:
-                logger.warning(f"[MACHINE ERROR] All {len(recs)} employees marked absent on {dt} — likely a machine error")
+            if len(recs) == 0:
+                continue
+                
+            absent_count = sum(1 for r in recs if r.get('attendance_status') == 'Absent')
+            absence_rate = absent_count / len(recs)
+            
+            # If more than 95% of employees are absent on a working day, it's likely a machine error.
+            # This accounts for edge cases where 1 or 2 people (like security) might be marked Present/Manual.
+            if absence_rate > 0.95:
+                logger.warning(f"[MACHINE ERROR] {absent_count}/{len(recs)} ({absence_rate:.1%}) employees marked absent on {dt} — likely a machine error")
                 for r in recs:
-                    r['attendance_status'] = 'Machine Error'
+                    if r.get('attendance_status') == 'Absent':
+                        r['attendance_status'] = 'Machine Error'
             
         return result
     

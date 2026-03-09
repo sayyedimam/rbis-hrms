@@ -73,7 +73,20 @@
             type="text"
             [(ngModel)]="editSearchEmpId"
             placeholder="e.g. RBIS0010"
+            (input)="onSearchChange()"
           />
+
+          <!-- Disambiguation Dropdown -->
+          <div class="employee-dropdown" *ngIf="showEmployeeDropdown">
+            <div
+              class="dropdown-item"
+              *ngFor="let emp of matchingEmployees"
+              (click)="selectEmployee(emp)"
+            >
+              <span class="emp-name">{{ emp.Name }}</span>
+              <span class="emp-id">{{ emp.EmpID }}</span>
+            </div>
+          </div>
         </div>
         <div class="search-input">
           <label>From Date</label>

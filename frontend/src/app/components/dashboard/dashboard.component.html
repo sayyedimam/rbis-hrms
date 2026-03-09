@@ -33,6 +33,7 @@
           [(ngModel)]="searchTerm"
           placeholder="Search Emp ID or Name..."
           (keyup.enter)="applyFilters()"
+          (input)="onSearchChange()"
         />
         <i
           data-lucide="search"
@@ -40,6 +41,18 @@
           (click)="applyFilters()"
           style="cursor: pointer; pointer-events: auto"
         ></i>
+
+        <!-- Disambiguation Dropdown -->
+        <div class="employee-dropdown" *ngIf="showEmployeeDropdown">
+          <div
+            class="dropdown-item"
+            *ngFor="let emp of matchingEmployees"
+            (click)="selectEmployee(emp)"
+          >
+            <span class="emp-name">{{ emp.Name }}</span>
+            <span class="emp-id">{{ emp.EmpID }}</span>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -72,14 +85,14 @@
 
     <!-- Stats Section (Conditionally Hidden) -->
     <app-stats-grid
-      *ngIf="!loading && hasData && showStatsCards"
+      *ngIf="!loading && hasData && showStatsCards && !searchNoResults"
       [stats]="stats"
       (onStatusClick)="viewStatusDetails($event)"
     >
     </app-stats-grid>
 
     <!-- Charts Grid (Restored) -->
-    <div class="charts-grid" *ngIf="!loading && hasData">
+    <div class="charts-grid" *ngIf="!loading && hasData && !searchNoResults">
       <div
         class="chart-card"
         [class.large]="showTrendChart"
@@ -182,6 +195,29 @@
     <div class="loading-state" *ngIf="loading">
       <div class="spinner"></div>
       <p>Analyzing workforce data...</p>
+    </div>
+
+    <!-- Premium Empty State for Search -->
+    <div class="empty-search-container" *ngIf="searchNoResults && !loading">
+      <div class="empty-state-content">
+        <div class="illustration-bubble">
+          <i data-lucide="search-x" class="main-icon"></i>
+          <div class="bubble-sparkle"></div>
+        </div>
+        <h2>No Matches Found</h2>
+        <p>
+          We couldn't find any employees matching "<strong>{{
+            searchTerm
+          }}</strong
+          >".
+        </p>
+        <div class="suggestion-tag">
+          Try checking for typos or searching by Employee ID
+        </div>
+        <button class="btn-clear-large" (click)="resetFilters()">
+          <i data-lucide="rotate-ccw"></i> Reset Search
+        </button>
+      </div>
     </div>
   </div>
 

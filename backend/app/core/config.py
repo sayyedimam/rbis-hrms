@@ -50,7 +50,7 @@ class Settings(BaseSettings):
     )
     
     ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(
-        default=480,  # 8 hours
+        default=60,  # 1 hour
         ge=1,
         le=1440,  # Max 24 hours
         description="JWT token expiration in minutes"

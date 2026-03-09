@@ -16,6 +16,12 @@ import { LeaveService } from '../../services/leave.service';
 })
 export class AnalyticsComponent implements OnInit, OnDestroy {
   searchTerm = '';
+  
+  // Disambiguation Search State
+  matchingEmployees: any[] = [];
+  showEmployeeDropdown = false;
+  searchNoResults = false;
+  selectedEmp = '';
   startDate = '';
   endDate = '';
   searchPerformed = false;
@@ -25,6 +31,7 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
   attendanceHistory: any[] = [];
   
   private rawData: any[] = [];
+  private lastFetchedRange = { start: '', end: '' };
   private subs = new Subscription();
 
   holidays: any[] = [];
@@ -76,6 +83,18 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
       return;
     }
 
+    // NEW: If date range is provided, force a re-fetch from backend to ensure data consistency
+    if (hasDateRange && (this.startDate !== this.lastFetchedRange.start || this.endDate !== this.lastFetchedRange.end)) {
+        const start = this.startDate;
+        const end = this.endDate;
+        this.lastFetchedRange = { start, end };
+        this.loading = true;
+        this.searchPerformed = true;
+        this.attendanceService.fetchAttendance(start, end);
+        // Note: performSearch will be called again via syncData() subscription when fetch completes
+        return; 
+    }
+
     if (hasTerm && !hasTerm.toLowerCase().startsWith('rbis') && /^\d/.test(hasTerm)) {
         this.notificationService.showAlert('Employee IDs must start with "RBIS" (e.g. RBIS0059)', 'info');
         this.loading = false;
@@ -92,12 +111,37 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
     this.searchPerformed = true;
 
     const term = this.searchTerm.toLowerCase();
+    
+    if (hasTerm && !this.selectedEmp) {
+        // Check for multiple matches
+        const matches = this.rawData.reduce((acc: any[], r: any) => {
+            if ((r.EmpID && r.EmpID.toLowerCase() === term) || (r.Employee_Name && r.Employee_Name.toLowerCase().includes(term))) {
+                if (!acc.find(a => a.EmpID === r.EmpID)) {
+                    acc.push({ EmpID: r.EmpID, Name: r.Employee_Name || 'Unknown' });
+                }
+            }
+            return acc;
+        }, []);
+
+        if (matches.length > 1) {
+            this.matchingEmployees = matches.sort((a, b) => a.Name.localeCompare(b.Name));
+            this.showEmployeeDropdown = true;
+            this.attendanceHistory = [];
+            this.employeeStats = null;
+            this.loading = false;
+            return;
+        }
+    }
+
+    this.showEmployeeDropdown = false;
+    this.searchNoResults = false;
     let filtered = this.rawData;
 
     if (hasTerm) {
+        const idToMatch = this.selectedEmp || term;
         filtered = filtered.filter(r => 
-            (r.EmpID && r.EmpID.toLowerCase() === term) || 
-            (r.Employee_Name && r.Employee_Name.toLowerCase().includes(term))
+            (r.EmpID && r.EmpID.toLowerCase() === idToMatch) || 
+            (!this.selectedEmp && r.Employee_Name && r.Employee_Name.toLowerCase().includes(term))
         );
     }
 
@@ -114,6 +158,7 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
       const present = filtered.filter(r => r.Attendance === 'Present').length;
       const absent = filtered.filter(r => r.Attendance === 'Absent').length;
       const leave = filtered.filter(r => r.Attendance === 'On Leave').length;
+      const machineError = filtered.filter(r => r.Attendance === 'Machine Error').length;
       
       const isSingleEmp = (this.searchTerm.trim() || !this.canViewAll) && filtered.every(r => r.EmpID === filtered[0].EmpID);
       
@@ -122,6 +167,7 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
         present,
         absent,
         leave,
+        machineError,
         name: isSingleEmp 
           ? (filtered.find(r => r.Employee_Name)?.Employee_Name || filtered[0].EmpID)
           : (this.canViewAll ? 'Organization Summary' : 'My Attendance Summary'),
@@ -132,6 +178,7 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
     }
 
     this.loading = false;
+    this.searchNoResults = filtered.length === 0 && !!this.searchTerm;
   }
 
   clearSearch() {
@@ -141,5 +188,23 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
     this.searchPerformed = false;
     this.attendanceHistory = [];
     this.employeeStats = null;
+    this.matchingEmployees = [];
+    this.showEmployeeDropdown = false;
+    this.searchNoResults = false;
+    this.selectedEmp = '';
+  }
+
+  selectEmployee(emp: any) {
+    this.selectedEmp = emp.EmpID;
+    this.searchTerm = emp.Name;
+    this.showEmployeeDropdown = false;
+    this.matchingEmployees = [];
+    this.performSearch();
+  }
+
+  onSearchChange() {
+    this.selectedEmp = '';
+    this.showEmployeeDropdown = false;
+    this.searchNoResults = false;
   }
 }

@@ -44,6 +44,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
     toDate: string = '';
     selectedEmp: string = '';
     searchTerm: string = '';
+
+    // Disambiguation Search State
+    matchingEmployees: any[] = [];
+    showEmployeeDropdown = false;
+    searchNoResults = false;
     
     // UI Metadata
     activeEmployee: any = null;
@@ -150,8 +155,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
         this.attendanceService.fetchAttendance();
 
-        this.subs.add(this.attendanceService.typeAData$.subscribe(() => this.syncData()));
-        this.subs.add(this.attendanceService.typeBData$.subscribe(() => this.syncData()));
+        this.subs.add(this.attendanceService.attendanceData$.subscribe(() => this.syncData()));
         this.subs.add(this.attendanceService.hasData$.subscribe(has => this.hasData = has));
 
         this.subs.add(this.authService.currentUser$.subscribe(u => {
@@ -212,6 +216,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
         this.fromDate = '';
         this.toDate = '';
         this.searchTerm = '';
+        this.matchingEmployees = [];
+        this.showEmployeeDropdown = false;
+        this.searchNoResults = false;
         this.lastFetchedRange = { from: '', to: '' };
         
         if (this.canViewAll) {
@@ -260,17 +267,46 @@ export class DashboardComponent implements OnInit, OnDestroy {
             filtered = filtered.filter(d => String(d['EmpID']) === this.selectedEmp);
         } else if (this.searchTerm.trim()) {
             const term = this.searchTerm.trim().toLowerCase();
-            filtered = filtered.filter(r => {
-                const empIdMatch = (r.EmpID && r.EmpID.toLowerCase() === term);
-                const nameMatch = r.Employee_Name && r.Employee_Name.toLowerCase().includes(term);
-                return empIdMatch || nameMatch;
-            });
+            
+            // Check for multiple matches
+            const matches = this.rawData.reduce((acc: any[], r: any) => {
+                if ((r.EmpID && r.EmpID.toLowerCase() === term) || (r.Employee_Name && r.Employee_Name.toLowerCase().includes(term))) {
+                    if (!acc.find(a => a.EmpID === r.EmpID)) {
+                        acc.push({ EmpID: r.EmpID, Name: r.Employee_Name || 'Unknown' });
+                    }
+                }
+                return acc;
+            }, []);
+
+            if (matches.length > 1 && !this.selectedEmp) {
+                // Multiple employees found - show disambiguation dropdown
+                this.matchingEmployees = matches.sort((a, b) => a.Name.localeCompare(b.Name));
+                this.showEmployeeDropdown = true;
+                this.filteredData = [];
+                this.showStatsCards = false;
+                this.activeEmployee = null;
+                this.calculateStats([]);
+                this.processChartData([]);
+                return;
+            } else {
+                this.showEmployeeDropdown = false;
+                filtered = filtered.filter(r => {
+                    const idToMatch = this.selectedEmp || term;
+                    const empIdMatch = (r.EmpID && r.EmpID.toLowerCase() === idToMatch);
+                    const nameMatch = !this.selectedEmp && r.Employee_Name && r.Employee_Name.toLowerCase().includes(term);
+                    return empIdMatch || nameMatch;
+                });
+
+                this.searchNoResults = filtered.length === 0 && !!this.searchTerm;
+            }
+        } else {
+            this.searchNoResults = false;
         }
 
         this.filteredData = filtered;
         
         // 3. Visibility and Metadata
-        const isIndividualSearch = this.selectedEmp || (this.searchTerm.trim() && filtered.length > 0 && this.isExactMatch(filtered));
+        const isIndividualSearch = !!this.selectedEmp || (this.searchTerm.trim() && filtered.length > 0 && this.isExactMatch(filtered));
         this.showStatsCards = !!(this.fromDate && !this.toDate) || !!isIndividualSearch;
         
         if (isIndividualSearch) {
@@ -291,6 +327,20 @@ export class DashboardComponent implements OnInit, OnDestroy {
         this.processChartData(filtered);
     }
 
+    selectEmployee(emp: any) {
+        this.selectedEmp = emp.EmpID;
+        this.searchTerm = emp.Name;
+        this.showEmployeeDropdown = false;
+        this.matchingEmployees = [];
+        this.applyFilters();
+    }
+
+    onSearchChange() {
+        this.selectedEmp = '';
+        this.showEmployeeDropdown = false;
+        this.searchNoResults = false;
+    }
+
     private calculateStats(data: any[]) {
         if (!data || data.length === 0) {
             this.stats = { present: 0, absent: 0, onLeave: 0, avgHours: 0, label: 'No Data' };
@@ -304,8 +354,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
             const present = data.filter(d => d.Attendance === 'Present').length;
             const absent = data.filter(d => d.Attendance === 'Absent').length;
             const onLeave = data.filter(d => d.Attendance === 'On Leave').length;
+            const machineError = data.filter(d => d.Attendance === 'Machine Error').length;
             
-            const hours = data.filter(d => d.Attendance === 'Present').map(r => this.parseDuration(r.Total_Duration || r.In_Duration));
+            const hours = data.filter(d => d.Attendance === 'Present').map(r => this.parseDuration(r.In_Duration || r.Total_Duration));
             let avgH = hours.length > 0 ? hours.reduce((a, b) => a + b, 0) / hours.length : 0;
             if (avgH === 0 && present > 0) avgH = 8.0;
 
@@ -324,8 +375,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
             const present = latestRecords.filter(d => d.Attendance === 'Present').length;
             const absent = latestRecords.filter(d => d.Attendance === 'Absent').length;
             const onLeave = latestRecords.filter(d => d.Attendance === 'On Leave').length;
+            const machineError = latestRecords.filter(d => d.Attendance === 'Machine Error').length;
             
-            const hours = latestRecords.filter(d => d.Attendance === 'Present').map(r => this.parseDuration(r.Total_Duration || r.In_Duration));
+            const hours = latestRecords.filter(d => d.Attendance === 'Present').map(r => this.parseDuration(r.In_Duration || r.Total_Duration));
             let avgH = hours.length > 0 ? hours.reduce((a, b) => a + b, 0) / hours.length : 0;
             if (avgH === 0 && present > 0) avgH = 8.0;
 
@@ -357,7 +409,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
             const onLeave = dayRecords.filter(d => d.Attendance === 'On Leave').length;
 
             const presentRecords = dayRecords.filter(d => d.Attendance === 'Present');
-            const hours = presentRecords.map(r => this.parseDuration(r.Total_Duration || r.In_Duration));
+            const hours = presentRecords.map(r => this.parseDuration(r.In_Duration || r.Total_Duration));
             let avgH = hours.length > 0 ? hours.reduce((a, b) => a + b, 0) / hours.length : 0;
             if (avgH === 0 && present > 0) avgH = 8.0;
 

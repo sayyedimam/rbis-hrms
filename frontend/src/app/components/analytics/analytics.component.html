@@ -22,7 +22,20 @@
           [(ngModel)]="searchTerm"
           placeholder="Enter Employee ID (eg: RBIS0058) or Name"
           (keyup.enter)="performSearch()"
+          (input)="onSearchChange()"
         />
+
+        <!-- Disambiguation Dropdown -->
+        <div class="employee-dropdown" *ngIf="showEmployeeDropdown">
+          <div
+            class="dropdown-item"
+            *ngFor="let emp of matchingEmployees"
+            (click)="selectEmployee(emp)"
+          >
+            <span class="emp-name">{{ emp.Name }}</span>
+            <span class="emp-id">{{ emp.EmpID }}</span>
+          </div>
+        </div>
       </div>
       <div class="input-range">
         <div class="date-group">
@@ -50,7 +63,10 @@
   </div>
 
   <!-- Results View -->
-  <div class="results-view" *ngIf="searchPerformed && !loading">
+  <div
+    class="results-view"
+    *ngIf="searchPerformed && !loading && !searchNoResults"
+  >
     <!-- Employee Summary Card -->
     <div class="emp-summary-card" *ngIf="employeeStats">
       <div class="emp-identity">
@@ -72,6 +88,10 @@
         <div class="stat-mini">
           <span class="val">{{ employeeStats.leave }}</span>
           <span class="lbl">On Leave</span>
+        </div>
+        <div class="stat-mini" *ngIf="employeeStats.machineError > 0">
+          <span class="val">{{ employeeStats.machineError }}</span>
+          <span class="lbl">Machine Error</span>
         </div>
       </div>
     </div>
@@ -108,10 +128,29 @@
       </table>
     </div>
 
-    <!-- No Results State -->
-    <div class="no-results" *ngIf="attendanceHistory.length === 0">
-      <i data-lucide="info"></i>
-      <p>No records found for the given criteria.</p>
+    <!-- No Results State (Legacy removed) -->
+  </div>
+
+  <!-- Premium Empty State for Analytics Search -->
+  <div class="empty-search-container" *ngIf="searchNoResults && !loading">
+    <div class="empty-state-content">
+      <div class="illustration-bubble">
+        <i data-lucide="search-x" class="main-icon"></i>
+        <div class="bubble-sparkle"></div>
+      </div>
+      <h2>No Matches Found</h2>
+      <p>
+        We couldn't find any attendance records matching "<strong>{{
+          searchTerm
+        }}</strong
+        >".
+      </p>
+      <div class="suggestion-tag">
+        Try checking for typos or searching by Employee ID
+      </div>
+      <button class="btn-clear-large" (click)="clearSearch()">
+        <i data-lucide="rotate-ccw"></i> Reset Search
+      </button>
     </div>
   </div>
 

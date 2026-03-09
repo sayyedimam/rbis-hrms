@@ -28,6 +28,13 @@ import { CommonModule } from '@angular/common';
           <span class="value">{{ stats.onLeave }}</span>
         </div>
       </div>
+      <div class="stat-card clickable" *ngIf="stats.machineError > 0" (click)="onStatusClick.emit('Machine Error')">
+        <div class="stat-icon machine-error"><i data-lucide="alert-triangle"></i></div>
+        <div class="stat-info">
+          <span class="label">Machine Error</span>
+          <span class="value">{{ stats.machineError }}</span>
+        </div>
+      </div>
       <div class="stat-card">
         <div class="stat-icon efficiency"><i data-lucide="zap"></i></div>
         <div class="stat-info">

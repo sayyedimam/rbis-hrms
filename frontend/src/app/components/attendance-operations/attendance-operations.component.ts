@@ -27,6 +27,12 @@ export class AttendanceOperationsComponent implements OnInit, OnDestroy {
   editingRecord: any = null;
   isSaving = false;
 
+  // Disambiguation Search State
+  matchingEmployees: any[] = [];
+  showEmployeeDropdown = false;
+  searchNoResults = false;
+  selectedEmpId = '';
+
   private rawData: any[] = [];
   private subs = new Subscription();
 
@@ -57,10 +63,39 @@ export class AttendanceOperationsComponent implements OnInit, OnDestroy {
     let d = this.rawData;
     if (this.editSearchEmpId.trim()) {
       const term = this.editSearchEmpId.trim().toLowerCase();
+      
+      // Check for multiple matches if no specific employee selected
+      if (!this.selectedEmpId) {
+        const matches = this.rawData.reduce((acc: any[], r: any) => {
+          if ((r.EmpID && r.EmpID.toLowerCase() === term) || (r.Employee_Name && r.Employee_Name.toLowerCase().includes(term))) {
+            if (!acc.find(a => a.EmpID === r.EmpID)) {
+              acc.push({ EmpID: r.EmpID, Name: r.Employee_Name || 'Unknown' });
+            }
+          }
+          return acc;
+        }, []);
+
+        if (matches.length > 1) {
+          this.matchingEmployees = matches.sort((a, b) => a.Name.localeCompare(b.Name));
+          this.showEmployeeDropdown = true;
+          this.searchNoResults = false;
+          return []; // Don't show mixed data
+        }
+      }
+
+      this.showEmployeeDropdown = false;
+      const idToMatch = this.selectedEmpId || term;
+      const prevLength = d.length;
       d = d.filter(r => 
-        (r.EmpID && r.EmpID.toLowerCase() === term) || 
-        (r.Employee_Name && r.Employee_Name.toLowerCase().includes(term))
+        (r.EmpID && r.EmpID.toLowerCase() === idToMatch) || 
+        (!this.selectedEmpId && r.Employee_Name && r.Employee_Name.toLowerCase().includes(term))
       );
+      
+      this.searchNoResults = d.length === 0 && !!this.editSearchEmpId;
+    } else {
+      this.showEmployeeDropdown = false;
+      this.searchNoResults = false;
+      this.selectedEmpId = '';
     }
     if (this.fromDate) {
       const start = this.fromDate;
@@ -83,6 +118,10 @@ export class AttendanceOperationsComponent implements OnInit, OnDestroy {
       this.editSearchEmpId = '';
       this.fromDate = '';
       this.toDate = '';
+      this.matchingEmployees = [];
+      this.showEmployeeDropdown = false;
+      this.searchNoResults = false;
+      this.selectedEmpId = '';
     }
   }
 
@@ -168,5 +207,18 @@ export class AttendanceOperationsComponent implements OnInit, OnDestroy {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  }
+
+  selectEmployee(emp: any) {
+    this.selectedEmpId = emp.EmpID;
+    this.editSearchEmpId = emp.Name;
+    this.showEmployeeDropdown = false;
+    this.matchingEmployees = [];
+  }
+
+  onSearchChange() {
+    this.selectedEmpId = '';
+    this.showEmployeeDropdown = false;
+    this.searchNoResults = false;
   }
 }
